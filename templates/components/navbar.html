@@ -1,0 +1,49 @@
+<nav class="navbar">
+    <a href="{% url 'dashboard' %}" class="navbar-brand">TikTakTuk</a>
+
+    <div class="navbar-menu">
+
+        {% if not user.is_authenticated %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'pilih_role' %}">Registrasi</a>
+
+        {% else %}
+
+            {% if user.is_superuser or user.role == "admin" %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'manajemen_venue' %}">Manajemen Venue</a>
+                <a href="{% url 'manajemen_kursi' %}">Manajemen Kursi</a>
+                <a href="{% url 'kategori_tiket' %}">Kategori Tiket</a>
+                <a href="{% url 'manajemen_tiket' %}">Manajemen Tiket</a>
+                <a href="{% url 'semua_order' %}">Semua Order</a>
+                <a href="{% url 'tiket_aset' %}">Tiket Aset</a>
+                <a href="{% url 'order_aset' %}">Order Aset</a>
+                <a href="{% url 'profile' %}">Profile</a>
+
+            {% elif user.role == "organizer" %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'event_saya' %}">Event Saya</a>
+                <a href="{% url 'manajemen_venue' %}">Manajemen Venue</a>
+                <a href="{% url 'manajemen_kursi' %}">Manajemen Kursi</a>
+                <a href="{% url 'kategori_tiket' %}">Kategori Tiket</a>
+                <a href="{% url 'manajemen_tiket' %}">Manajemen Tiket</a>
+                <a href="{% url 'semua_order' %}">Semua Order</a>
+                <a href="{% url 'tiket_aset' %}">Tiket Aset</a>
+                <a href="{% url 'order_aset' %}">Order Aset</a>
+                <a href="{% url 'profile' %}">Profile</a>
+
+            {% elif user.role == "customer" %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'tiket_saya' %}">Tiket Saya</a>
+                <a href="{% url 'pesanan' %}">Pesanan</a>
+                <a href="{% url 'cari_event' %}">Cari Event</a>
+                <a href="{% url 'promosi' %}">Promosi</a>
+                <a href="{% url 'venue' %}">Venue</a>
+                <a href="{% url 'artis' %}">Artis</a>
+            {% endif %}
+
+            <a href="{% url 'logout' %}">Logout</a>
+
+        {% endif %}
+    </div>
+</nav>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TikTakTuk{% endblock %}
+
+{% block content %}
+<div class="py-4">
+  <div class="mb-4">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="text-muted">Selamat datang di TikTakTuk. Kelola venue dan event dengan lebih mudah.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card card-soft p-4">
+        <h5>Jelajahi Acara</h5>
+        <p class="text-muted mb-3">Lihat daftar event yang tersedia.</p>
+        <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka Event</a>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card card-soft p-4">
+        <h5>Venue</h5>
+        <p class="text-muted mb-3">Lihat dan kelola venue yang tersedia.</p>
+        <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+      </div>
+    </div>
+
+    {% if request.user.is_authenticated %}
+    <div class="col-md-4">
+      <div class="card card-soft p-4">
+        <h5>Acara Saya</h5>
+        <p class="text-muted mb-3">Kelola event yang kamu buat.</p>
+        <a href="{% url 'event_manage_list' %}" class="btn btn-outline-primary rounded-pill">Kelola Event</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

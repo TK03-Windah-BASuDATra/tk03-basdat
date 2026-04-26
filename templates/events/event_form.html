@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+    <div class="card card-soft">
+      <div class="card-body p-4 p-md-5">
+        <div class="mb-4">
+          <h1 class="page-title h3 mb-1">{{ title }}</h1>
+          <p class="text-muted mb-0">Isi informasi event dan kategori tiketnya.</p>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label">{{ form.event_title.label }}</label>
+              {{ form.event_title }}
+              <div class="text-danger small">{{ form.event_title.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">{{ form.venue.label }}</label>
+              {{ form.venue }}
+              <div class="text-danger small">{{ form.venue.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">{{ form.event_datetime.label }}</label>
+              {{ form.event_datetime }}
+              <div class="text-danger small">{{ form.event_datetime.errors }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">{{ form.image_url.label }}</label>
+              {{ form.image_url }}
+              <div class="text-danger small">{{ form.image_url.errors }}</div>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">{{ form.artists.label }}</label>
+              {{ form.artists }}
+              <div class="form-text">Pisahkan artis dengan koma. Contoh: Hindia, Fourtwnty, Nadin Amizah</div>
+              <div class="text-danger small">{{ form.artists.errors }}</div>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">{{ form.description.label }}</label>
+              {{ form.description }}
+              <div class="text-danger small">{{ form.description.errors }}</div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-1">Kategori Tiket</h5>
+              <p class="text-muted small mb-0">Tambahkan minimal satu kategori tiket.</p>
+            </div>
+            <button type="button" id="add-ticket-form" class="btn btn-outline-primary rounded-pill">
+              + Tambah Kategori
+            </button>
+          </div>
+
+          {{ formset.management_form }}
+
+          {% if formset.non_form_errors %}
+            <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+          {% endif %}
+
+          <div id="ticket-formset">
+            {% for ticket_form in formset %}
+              <div class="ticket-form card border-0 bg-light-subtle mb-3">
+                <div class="card-body">
+                  {% for hidden in ticket_form.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
+
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">{{ ticket_form.category_name.label }}</label>
+                      {{ ticket_form.category_name }}
+                      <div class="text-danger small">{{ ticket_form.category_name.errors }}</div>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">{{ ticket_form.price.label }}</label>
+                      {{ ticket_form.price }}
+                      <div class="text-danger small">{{ ticket_form.price.errors }}</div>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">{{ ticket_form.quota.label }}</label>
+                      {{ ticket_form.quota }}
+                      <div class="text-danger small">{{ ticket_form.quota.errors }}</div>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                      {% if ticket_form.DELETE %}
+                        <div class="form-check">
+                          {{ ticket_form.DELETE }}
+                          <label class="form-check-label" for="{{ ticket_form.DELETE.id_for_label }}">
+                            Hapus
+                          </label>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <template id="empty-ticket-form">
+            <div class="ticket-form card border-0 bg-light-subtle mb-3">
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Category name</label>
+                    {{ formset.empty_form.category_name }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Price</label>
+                    {{ formset.empty_form.price }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Quota</label>
+                    {{ formset.empty_form.quota }}
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <span class="text-muted small">Form baru</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <div class="d-flex gap-2 mt-4">
+            <a href="{% url 'event_manage_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-4">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const addButton = document.getElementById('add-ticket-form');
+    const formsetContainer = document.getElementById('ticket-formset');
+    const totalForms = document.getElementById('id_ticket_categories-TOTAL_FORMS')
+      || document.getElementById('id_ticketcategory_set-TOTAL_FORMS')
+      || document.querySelector('[name$="-TOTAL_FORMS"]');
+
+    const template = document.getElementById('empty-ticket-form');
+
+    addButton.addEventListener('click', function () {
+      const formIndex = parseInt(totalForms.value, 10);
+      let newFormHtml = template.innerHTML.replace(/__prefix__/g, formIndex);
+      formsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
+      totalForms.value = formIndex + 1;
+    });
+  });
+</script>
+{% endblock %}

@@ -1,22 +1,30 @@
-"""
-URL configuration for tk03_basdat project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from . import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("", views.dashboard, name="dashboard"),
+    
+    path("accounts/", include("accounts.urls")),
+    path('events/', include('events.urls')),
+
+    path("profile/", views.profile, name="profile"),
+
+    path("manajemen-venue/", views.manajemen_venue, name="manajemen_venue"),
+    path("manajemen-kursi/", views.manajemen_kursi, name="manajemen_kursi"),
+    path("kategori-tiket/", views.kategori_tiket, name="kategori_tiket"),
+    path("manajemen-tiket/", views.manajemen_tiket, name="manajemen_tiket"),
+    path("semua-order/", views.semua_order, name="semua_order"),
+    path("tiket-aset/", views.tiket_aset, name="tiket_aset"),
+    path("order-aset/", views.order_aset, name="order_aset"),
+
+    path("event-saya/", views.event_saya, name="event_saya"),
+
+    path("tiket-saya/", views.tiket_saya, name="tiket_saya"),
+    path("pesanan/", views.pesanan, name="pesanan"),
+    path("cari-event/", views.cari_event, name="cari_event"),
+    path("promosi/", views.promosi, name="promosi"),
+    path("venue/", views.venue, name="venue"),
+    path("artis/", views.artis, name="artis"),
 ]
