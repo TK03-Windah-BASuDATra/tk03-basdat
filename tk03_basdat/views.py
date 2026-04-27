@@ -1,49 +1,99 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 def dashboard(request):
     return render(request, "dashboard.html")
 
-def profile(request):
-    return render(request, "profile.html")
+def _render_placeholder(request, title, description):
+    return render(request, "placeholder_page.html", {
+        "page_title": title,
+        "page_description": description,
+    })
 
 def manajemen_venue(request):
-    return render(request, "manajemen_venue.html")
-
-def manajemen_kursi(request):
-    return render(request, "manajemen_kursi.html")
-
-def kategori_tiket(request):
-    return render(request, "kategori_tiket.html")
-
-def manajemen_tiket(request):
-    return render(request, "manajemen_tiket.html")
-
-def semua_order(request):
-    return render(request, "semua_order.html")
-
-def tiket_aset(request):
-    return render(request, "tiket_aset.html")
-
-def order_aset(request):
-    return render(request, "order_aset.html")
+    return redirect("venue_list")
 
 def event_saya(request):
-    return render(request, "event_saya.html")
-
-def tiket_saya(request):
-    return render(request, "tiket_saya.html")
-
-def pesanan(request):
-    return render(request, "pesanan.html")
+    return redirect("event_manage_list")
 
 def cari_event(request):
-    return render(request, "cari_event.html")
-
-def promosi(request):
-    return render(request, "promosi.html")
+    return redirect("event_list")
 
 def venue(request):
-    return render(request, "venue.html")
+    return redirect("venue_list")
+
+def profile(request):
+    return _render_placeholder(
+        request,
+        "Profile",
+        "Halaman profile masih berupa placeholder untuk TK03."
+    )
+
+def manajemen_kursi(request):
+    return _render_placeholder(
+        request,
+        "Manajemen Kursi",
+        "Halaman manajemen kursi masih berupa placeholder untuk TK03."
+    )
+
+def kategori_tiket(request):
+    return _render_placeholder(
+        request,
+        "Kategori Tiket",
+        "Halaman kategori tiket masih berupa placeholder untuk TK03."
+    )
+
+def manajemen_tiket(request):
+    return _render_placeholder(
+        request,
+        "Manajemen Tiket",
+        "Halaman manajemen tiket masih berupa placeholder untuk TK03."
+    )
+
+def semua_order(request):
+    return _render_placeholder(
+        request,
+        "Semua Order",
+        "Halaman semua order masih berupa placeholder untuk TK03."
+    )
+
+def tiket_aset(request):
+    return _render_placeholder(
+        request,
+        "Tiket (Aset)",
+        "Halaman tiket aset masih berupa placeholder untuk TK03."
+    )
+
+def order_aset(request):
+    return _render_placeholder(
+        request,
+        "Order (Aset)",
+        "Halaman order aset masih berupa placeholder untuk TK03."
+    )
+
+def tiket_saya(request):
+    return _render_placeholder(
+        request,
+        "Tiket Saya",
+        "Halaman tiket saya masih berupa placeholder untuk TK03."
+    )
+
+def pesanan(request):
+    return _render_placeholder(
+        request,
+        "Pesanan",
+        "Halaman pesanan masih berupa placeholder untuk TK03."
+    )
+
+def promosi(request):
+    return _render_placeholder(
+        request,
+        "Promosi",
+        "Halaman promosi masih berupa placeholder untuk TK03."
+    )
 
 def artis(request):
-    return render(request, "artis.html")
+    return _render_placeholder(
+        request,
+        "Artis",
+        "Halaman artis masih berupa placeholder untuk TK03."
+    )

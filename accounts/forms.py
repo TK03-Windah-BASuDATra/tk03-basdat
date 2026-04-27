@@ -2,7 +2,6 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User
 
-
 class RegisterForm(UserCreationForm):
     full_name = forms.CharField(max_length=150, label="Nama Lengkap")
     email = forms.EmailField(label="Email")
@@ -18,6 +17,34 @@ class RegisterForm(UserCreationForm):
             "password1",
             "password2",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["full_name"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Masukkan nama lengkap",
+        })
+        self.fields["email"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Masukkan email",
+        })
+        self.fields["phone_number"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Masukkan nomor telepon",
+        })
+        self.fields["username"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Pilih username",
+        })
+        self.fields["password1"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Masukkan password",
+        })
+        self.fields["password2"].widget.attrs.update({
+            "class": "form-control form-control-lg",
+            "placeholder": "Konfirmasi password",
+        })
 
     def save(self, commit=True, role="customer"):
         user = super().save(commit=False)

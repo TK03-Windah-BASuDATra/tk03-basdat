@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Pilih Role - TikTakTuk{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-shell {
+    min-height: calc(100vh - 140px);
+    display: flex;
+    align-items: center;
+  }
+  .auth-card {
+    border: 0;
+    border-radius: 1.5rem;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+  }
+  .role-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+    background: #fff;
+  }
+  .role-card:hover {
+    border-color: #111827;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+  .role-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: #f3f4f6;
+    margin-bottom: .75rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="auth-shell py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-9 col-lg-7">
+        <div class="card auth-card">
+          <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+              <h1 class="page-title h3 mb-2">Daftar untuk Memulai</h1>
+              <p class="text-muted mb-0">Pilih jenis akun yang sesuai dengan kebutuhan Anda</p>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <a href="{% url 'register' 'customer' %}" class="text-decoration-none text-reset">
+                  <div class="role-card h-100">
+                    <div class="role-icon">C</div>
+                    <h5 class="mb-2">Pelanggan</h5>
+                    <p class="text-muted mb-0">
+                      Beli dan kelola tiket untuk acara favorit Anda.
+                    </p>
+                  </div>
+                </a>
+              </div>
+
+              <div class="col-md-6">
+                <a href="{% url 'register' 'organizer' %}" class="text-decoration-none text-reset">
+                  <div class="role-card h-100">
+                    <div class="role-icon">O</div>
+                    <h5 class="mb-2">Penyelenggara</h5>
+                    <p class="text-muted mb-0">
+                      Buat dan kelola acara serta venue Anda.
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <p class="text-center text-muted mt-4 mb-0">
+              Sudah punya akun?
+              <a href="{% url 'login' %}" class="fw-semibold text-decoration-none">Login di sini</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

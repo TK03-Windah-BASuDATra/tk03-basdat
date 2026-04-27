@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Login - TikTakTuk{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-shell {
+    min-height: calc(100vh - 140px);
+    display: flex;
+    align-items: center;
+  }
+  .auth-card {
+    border: 0;
+    border-radius: 1.5rem;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+  }
+  .brand-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #111827, #374151);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="auth-shell py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-7 col-lg-5">
+        <div class="card auth-card">
+          <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+              <div class="brand-badge mx-auto">TT</div>
+              <h1 class="page-title h3 mb-2">Masuk ke Akun Anda</h1>
+              <p class="text-muted mb-0">Gunakan kredensial Anda untuk mengakses platform</p>
+            </div>
+
+            <form method="post">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label for="id_username" class="form-label">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  id="id_username"
+                  class="form-control form-control-lg"
+                  placeholder="Masukkan username"
+                  required
+                >
+              </div>
+
+              <div class="mb-4">
+                <label for="id_password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  id="id_password"
+                  class="form-control form-control-lg"
+                  placeholder="Masukkan password"
+                  required
+                >
+              </div>
+
+              <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill">
+                Masuk
+              </button>
+            </form>
+
+            <p class="text-center text-muted mt-4 mb-0">
+              Belum punya akun?
+              <a href="{% url 'pilih_role' %}" class="fw-semibold text-decoration-none">Daftar sekarang</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

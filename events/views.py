@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -8,13 +7,21 @@ from .models import Event, Venue
 
 
 def can_manage(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser or getattr(user, 'role', '') == 'organizer')
+    return user.is_authenticated and (
+        user.is_staff
+        or user.is_superuser
+        or getattr(user, 'role', '') in ['admin', 'organizer']
+    )
 
 
 def is_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+    return user.is_authenticated and (
+        user.is_staff
+        or user.is_superuser
+        or getattr(user, 'role', '') == 'admin'
+    )
 
-
+# VENUE
 def venue_list(request):
     venues = Venue.objects.all()
 
@@ -49,14 +56,14 @@ def venue_list(request):
     return render(request, 'events/venue_list.html', context)
 
 
-@login_required
-@user_passes_test(can_manage)
 def venue_create(request):
     if request.method == 'POST':
         form = VenueForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Venue berhasil ditambahkan.')
+            messages.success(
+                request,
+                'enue berhasil ditambahkan'
+            )
             return redirect('venue_list')
     else:
         form = VenueForm()
@@ -67,16 +74,16 @@ def venue_create(request):
     })
 
 
-@login_required
-@user_passes_test(can_manage)
 def venue_update(request, pk):
     venue = get_object_or_404(Venue, pk=pk)
 
     if request.method == 'POST':
         form = VenueForm(request.POST, instance=venue)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Venue berhasil diperbarui.')
+            messages.success(
+                request,
+                'perubahan venue berhasil diproses'
+            )
             return redirect('venue_list')
     else:
         form = VenueForm(instance=venue)
@@ -87,19 +94,21 @@ def venue_update(request, pk):
     })
 
 
-@login_required
-@user_passes_test(can_manage)
 def venue_delete(request, pk):
     venue = get_object_or_404(Venue, pk=pk)
 
     if request.method == 'POST':
-        venue.delete()
-        messages.success(request, 'Venue berhasil dihapus.')
+        messages.success(
+            request,
+            'venue berhasil dihapus'
+        )
         return redirect('venue_list')
 
-    return render(request, 'events/venue_confirm_delete.html', {'venue': venue})
+    return render(request, 'events/venue_confirm_delete.html', {
+        'venue': venue
+    })
 
-
+# EVENT
 def event_list(request):
     events = Event.objects.select_related('venue', 'organizer').prefetch_related('ticket_categories').all()
 
@@ -126,13 +135,12 @@ def event_list(request):
     return render(request, 'events/event_list.html', context)
 
 
-@login_required
-@user_passes_test(can_manage)
 def event_manage_list(request):
     events = Event.objects.select_related('venue', 'organizer').prefetch_related('ticket_categories')
 
-    if not is_admin(request.user):
-        events = events.filter(organizer=request.user)
+    if request.user.is_authenticated and not is_admin(request.user):
+        if getattr(request.user, 'role', '') == 'organizer':
+            events = events.filter(organizer=request.user)
 
     context = {
         'events': events,
@@ -140,22 +148,16 @@ def event_manage_list(request):
     return render(request, 'events/event_manage_list.html', context)
 
 
-@login_required
-@user_passes_test(can_manage)
 def event_create(request):
     if request.method == 'POST':
         form = EventForm(request.POST)
         formset = TicketCategoryFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            event = form.save(commit=False)
-            event.organizer = request.user
-            event.save()
-
-            formset.instance = event
-            formset.save()
-
-            messages.success(request, 'Event berhasil dibuat.')
+            messages.success(
+                request,
+                'event berhasil dibuat'
+            )
             return redirect('event_manage_list')
     else:
         form = EventForm()
@@ -168,23 +170,24 @@ def event_create(request):
     })
 
 
-@login_required
-@user_passes_test(can_manage)
 def event_update(request, pk):
     event = get_object_or_404(Event, pk=pk)
 
-    if not is_admin(request.user) and event.organizer != request.user:
-        messages.error(request, 'Kamu tidak punya akses untuk mengubah event ini.')
-        return redirect('event_manage_list')
+    if request.user.is_authenticated:
+        if not is_admin(request.user) and getattr(request.user, 'role', '') == 'organizer':
+            if event.organizer != request.user:
+                messages.error(request, 'Kamu tidak punya akses untuk mengubah event ini.')
+                return redirect('event_manage_list')
 
     if request.method == 'POST':
         form = EventForm(request.POST, instance=event)
         formset = TicketCategoryFormSet(request.POST, instance=event)
 
         if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-            messages.success(request, 'Event berhasil diperbarui.')
+            messages.success(
+                request,
+                'event berhasil diperbarui'
+            )
             return redirect('event_manage_list')
     else:
         form = EventForm(instance=event)

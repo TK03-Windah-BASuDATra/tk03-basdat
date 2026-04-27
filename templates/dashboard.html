@@ -2,39 +2,245 @@
 
 {% block title %}Dashboard - TikTakTuk{% endblock %}
 
+{% block extra_css %}
+<style>
+  .hero-card {
+    border: 0;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, #111827, #374151);
+    color: white;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
+  }
+  .feature-card {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease;
+  }
+  .feature-card:hover {
+    transform: translateY(-3px);
+  }
+  .icon-chip {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: #f3f4f6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 1rem;
+  }
+  .stat-box {
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 1rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="py-4">
-  <div class="mb-4">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="text-muted">Selamat datang di TikTakTuk. Kelola venue dan event dengan lebih mudah.</p>
-  </div>
+<div class="py-2">
 
-  <div class="row g-4">
-    <div class="col-md-4">
-      <div class="card card-soft p-4">
-        <h5>Jelajahi Acara</h5>
-        <p class="text-muted mb-3">Lihat daftar event yang tersedia.</p>
-        <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka Event</a>
+  {% if not request.user.is_authenticated %}
+    <div class="card hero-card p-4 p-md-5 mb-4">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="page-title text-white mb-3">Selamat Datang di TikTakTuk</h1>
+          <p class="mb-0 text-white-50">
+            Platform manajemen pertunjukan dan tiket untuk pelanggan maupun penyelenggara acara.
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <div class="stat-box mb-3">
+            <div class="small text-white-50">Akses Akun</div>
+            <div class="fw-semibold">Gunakan menu Login atau Registrasi pada navbar untuk memulai</div>
+          </div>
+          <div class="stat-box">
+            <div class="small text-white-50">Fitur Publik</div>
+            <div class="fw-semibold">Lihat event dan venue yang tersedia di platform</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="col-md-4">
-      <div class="card card-soft p-4">
-        <h5>Venue</h5>
-        <p class="text-muted mb-3">Lihat dan kelola venue yang tersedia.</p>
-        <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">EV</div>
+            <h5>Jelajahi Acara</h5>
+            <p class="text-muted">Lihat daftar event yang tersedia untuk kebutuhan tampilan frontend.</p>
+            <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka Event</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">VN</div>
+            <h5>Venue</h5>
+            <p class="text-muted">Lihat daftar venue yang tersedia pada sistem.</p>
+            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    {% if request.user.is_authenticated %}
-    <div class="col-md-4">
-      <div class="card card-soft p-4">
-        <h5>Acara Saya</h5>
-        <p class="text-muted mb-3">Kelola event yang kamu buat.</p>
-        <a href="{% url 'event_manage_list' %}" class="btn btn-outline-primary rounded-pill">Kelola Event</a>
+  {% elif request.user.is_superuser or request.user.role == "admin" %}
+    <div class="card hero-card p-4 p-md-5 mb-4">
+      <h1 class="page-title text-white mb-2">Dashboard Admin</h1>
+      <p class="text-white-50 mb-0">
+        Kelola venue, tiket, order, dan kebutuhan sistem TikTakTuk.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">VN</div>
+            <h5>Manajemen Venue</h5>
+            <p class="text-muted">Kelola daftar venue dan informasi venue.</p>
+            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">TK</div>
+            <h5>Kategori & Tiket</h5>
+            <p class="text-muted">Kelola kategori tiket dan data tiket.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{% url 'kategori_tiket' %}" class="btn btn-outline-primary rounded-pill">Kategori</a>
+              <a href="{% url 'manajemen_tiket' %}" class="btn btn-outline-secondary rounded-pill">Tiket</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">OD</div>
+            <h5>Order</h5>
+            <p class="text-muted">Lihat dan kelola seluruh data order.</p>
+            <a href="{% url 'semua_order' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+          </div>
+        </div>
       </div>
     </div>
-    {% endif %}
-  </div>
+
+  {% elif request.user.role == "organizer" %}
+    <div class="card hero-card p-4 p-md-5 mb-4">
+      <h1 class="page-title text-white mb-2">Dashboard Organizer</h1>
+      <p class="text-white-50 mb-0">
+        Kelola event, venue, dan operasional penyelenggaraan acara.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">EV</div>
+            <h5>Event Saya</h5>
+            <p class="text-muted">Lihat dan kelola event yang kamu buat.</p>
+            <a href="{% url 'event_manage_list' %}" class="btn btn-outline-primary rounded-pill">Kelola Event</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">VN</div>
+            <h5>Manajemen Venue</h5>
+            <p class="text-muted">Kelola venue untuk kebutuhan event.</p>
+            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">KT</div>
+            <h5>Tiket & Order</h5>
+            <p class="text-muted">Kelola kategori tiket, tiket, dan seluruh order.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="{% url 'kategori_tiket' %}" class="btn btn-outline-primary rounded-pill">Kategori</a>
+              <a href="{% url 'semua_order' %}" class="btn btn-outline-secondary rounded-pill">Order</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% elif request.user.role == "customer" %}
+    <div class="card hero-card p-4 p-md-5 mb-4">
+      <h1 class="page-title text-white mb-2">Dashboard Customer</h1>
+      <p class="text-white-50 mb-0">
+        Cari event, lihat venue, dan kelola tiket serta pesananmu.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-xl-3">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">EV</div>
+            <h5>Cari Event</h5>
+            <p class="text-muted">Temukan event yang tersedia.</p>
+            <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-3">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">VN</div>
+            <h5>Venue</h5>
+            <p class="text-muted">Lihat venue yang tersedia.</p>
+            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Lihat</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-3">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">TK</div>
+            <h5>Tiket Saya</h5>
+            <p class="text-muted">Kelola tiket milikmu.</p>
+            <a href="{% url 'tiket_saya' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-3">
+        <div class="card feature-card h-100">
+          <div class="card-body p-4">
+            <div class="icon-chip">PS</div>
+            <h5>Pesanan</h5>
+            <p class="text-muted">Lihat daftar pesananmu.</p>
+            <a href="{% url 'pesanan' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="card card-soft p-4">
+      <h1 class="page-title h3">Dashboard</h1>
+      <p class="text-muted mb-0">Role pengguna belum terdeteksi.</p>
+    </div>
+  {% endif %}
+
 </div>
 {% endblock %}
