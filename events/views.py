@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 
 from .forms import EventForm, TicketCategoryFormSet, VenueForm
 from .models import Event, Venue

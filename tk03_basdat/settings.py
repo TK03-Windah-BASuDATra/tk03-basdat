@@ -45,6 +45,8 @@ INSTALLED_APPS = [
 
     'accounts',
     'events',
+    'orders',
+    'widget_tweaks',
 ]
 
 AUTH_USER_MODEL = "accounts.User"

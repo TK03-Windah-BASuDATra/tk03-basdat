@@ -27,4 +27,5 @@ urlpatterns = [
     path("promosi/", views.promosi, name="promosi"),
     path("venue/", views.venue, name="venue"),
     path("artis/", views.artis, name="artis"),
+    path('orders/',   include('orders.urls')),
 ]
