@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'artist',
-    'ticket_category'
+    'ticket_category',
     'accounts',
     'events',
 ]
