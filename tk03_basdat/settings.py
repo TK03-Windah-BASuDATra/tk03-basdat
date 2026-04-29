@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'orders',
     'widget_tweaks',
     'tickets',
+    'seats',
 ]
 
 AUTH_USER_MODEL = "accounts.User"

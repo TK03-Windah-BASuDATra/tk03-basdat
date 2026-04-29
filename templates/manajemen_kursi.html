@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - TikTakTuk{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.25rem}
+  .stat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.25rem}
+  .stat .label{font-size:.8rem;font-weight:600;letter-spacing:.04em;color:#94a3b8;margin-bottom:.4rem;text-transform:uppercase}
+  .stat .value{font-size:2rem;font-weight:800;color:#1e293b}
+  .toolbar{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem}
+  .search{position:relative;flex:1;min-width:260px}
+  .search input{width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:.65rem 1rem}
+  .filter{border:1px solid #e2e8f0;border-radius:10px;padding:.65rem 1rem;min-width:180px;background:#fff}
+  .table-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+  table thead th{background:#f8fafc;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-size:.75rem}
+  .badge-status{font-size:.75rem;font-weight:700;border-radius:999px;padding:.35rem .6rem}
+  .badge-tersedia{background:#d1fae5;color:#065f46}
+  .badge-terisi{background:#fef3c7;color:#92400e}
+  .actions .btn.disabled{opacity:.35!important}
+  .actions .btn[aria-disabled="true"]{opacity:.15!important}
+  .actions .btn{border:1px solid #e2e8f0;border-radius:8px;padding:.35rem .6rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ page_title }}</h1>
+      <div class="text-muted small">Kelola kursi dan denah tempat duduk venue</div>
+    </div>
+    <button class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#seatCreateModal">+ Tambah Kursi</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Total Kursi</div><div class="value">{{ total_seats }}</div></div>
+    <div class="stat"><div class="label">Tersedia</div><div class="value">{{ available_seats }}</div></div>
+    <div class="stat"><div class="label">Terisi</div><div class="value">{{ occupied_seats }}</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search"><input type="text" placeholder="Cari section, baris, atau nomor..."></div>
+    <select class="filter">
+      {% for v in venues %}
+        <option value="{{ v }}">{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width:22%">Section</th>
+          <th style="width:12%">Baris</th>
+          <th style="width:14%">No. Kursi</th>
+          <th style="width:30%">Venue</th>
+          <th style="width:12%">Status</th>
+          <th style="width:10%" class="text-end">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in seats %}
+        <tr>
+          <td>{{ s.section }}</td>
+          <td>{{ s.row }}</td>
+          <td>
+            <span class="btn btn-sm btn-light border">{{ s.number }}</span>
+          </td>
+          <td class="text-muted">{{ s.venue }}</td>
+          <td>
+            {% if s.status == 'Terisi' %}
+              <span class="badge-status badge-terisi">TERISI</span>
+            {% else %}
+              <span class="badge-status badge-tersedia">TERSEDIA</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex justify-content-end gap-2 actions">
+              <button class="btn btn-sm btn-outline-secondary" title="Edit" data-bs-toggle="modal" data-bs-target="#seatEditModal">✏️</button>
+              {% if s.status == 'Terisi' %}
+                <button class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" title="Kursi ini sudah di-assign ke tiket dan tidak dapat dihapus. Hapus atau ubah tiket terlebih dahulu.">🗑️</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-danger" title="Hapus" data-bs-toggle="modal" data-bs-target="#seatDeleteModal">🗑️</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">Belum ada kursi terdaftar.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal fade" id="seatCreateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Tambah Kursi Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Venue</label>
+            <select class="form-select">
+              {% for v in venues %}
+                {% if v != 'Semua Venue' %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Section</label>
+            <input type="text" class="form-control" placeholder="WVIP">
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Baris</label>
+              <input type="text" class="form-control" placeholder="A">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">No. Kursi</label>
+              <input type="text" class="form-control" placeholder="1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary rounded-pill">Tambah</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="seatEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Edit Kursi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Venue</label>
+            <select class="form-select">
+              {% for v in venues %}
+                {% if v != 'Semua Venue' %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Section</label>
+            <input type="text" class="form-control" placeholder="WVIP">
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Baris</label>
+              <input type="text" class="form-control" placeholder="A">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">No. Kursi</label>
+              <input type="text" class="form-control" placeholder="2">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary rounded-pill">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="seatDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-danger">Hapus Kursi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Apakah Anda yakin ingin menghapus kursi ini? Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-danger rounded-pill" data-bs-dismiss="modal">Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}
