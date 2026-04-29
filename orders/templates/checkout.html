@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout Tiket{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f0f4f8; }
+
+  /* Stepper */
+  .stepper { font-size: 0.8rem; color: #94a3b8; }
+  .stepper .active { color: #6366f1; font-weight: 600; }
+
+  /* Card */
+  .checkout-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+    border: none;
+  }
+
+  /* Info Event */
+  .event-icon {
+    width: 52px; height: 52px;
+    background: #ede9fe;
+    border-radius: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .event-icon i { font-size: 1.5rem; color: #6366f1; }
+  .artist-badge {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: 999px;
+    margin-right: 4px;
+  }
+
+  /* Kategori Tiket */
+  .category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.75rem;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .category-item:hover { border-color: #a5b4fc; }
+  .category-item.selected {
+    border-color: #6366f1;
+    background: #f5f3ff;
+  }
+  .category-item.selected .cat-price { color: #6366f1; font-weight: 700; }
+  .category-item input[type=radio] { display: none; }
+  .cat-name { font-weight: 600; font-size: 0.92rem; color: #1e293b; }
+  .cat-quota { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+  .cat-price { font-weight: 600; font-size: 0.92rem; color: #334155; }
+  .check-icon {
+    width: 22px; height: 22px;
+    background: #6366f1;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-left: 10px;
+  }
+  .check-icon i { color: #fff; font-size: 0.7rem; }
+
+  /* Jumlah & Kursi */
+  .qty-btn {
+    width: 32px; height: 32px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; color: #475569;
+    cursor: pointer; transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .qty-btn:hover { border-color: #6366f1; color: #6366f1; }
+  .qty-input {
+    width: 48px;
+    text-align: center;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+    padding: 4px 0;
+  }
+  .qty-input:focus { outline: none; border-color: #6366f1; }
+
+  /* Kursi */
+  .seat-btn {
+    padding: 6px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .seat-btn:hover { border-color: #6366f1; color: #6366f1; }
+  .seat-btn.selected {
+    border-color: #6366f1;
+    background: #6366f1;
+    color: #fff;
+  }
+
+  /* Promo */
+  .promo-input {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.65rem 0 0 0.65rem;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    color: #475569;
+    flex: 1;
+  }
+  .promo-input:focus { outline: none; border-color: #6366f1; }
+  .promo-btn {
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-left: none;
+    border-radius: 0 0.65rem 0.65rem 0;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .promo-btn:hover { background: #f8fafc; }
+
+  /* Ringkasan */
+  .summary-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+    position: sticky;
+    top: 80px;
+  }
+  .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; color: #64748b; }
+  .summary-total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; color: #1e293b; }
+  .summary-total-price { color: #1e293b; }
+  .pay-btn {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 0.65rem;
+    padding: 13px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .pay-btn:hover { background: #4f46e5; }
+
+  .section-label { font-weight: 700; font-size: 0.95rem; color: #1e293b; margin-bottom: 4px; }
+  .section-sub   { font-size: 0.78rem; color: #94a3b8; margin-bottom: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 960px;">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="fw-bold mb-0" style="font-size:1.15rem; color:#1e293b;">Checkout Tiket</h5>
+    <div class="stepper">
+      <span class="active">Pilih</span>
+      <span class="mx-1">›</span>
+      <span>Bayar</span>
+      <span class="mx-1">›</span>
+      <span>Selesai</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ===== KOLOM KIRI ===== -->
+    <div class="col-lg-7">
+
+      <!-- Info Event -->
+      <div class="checkout-card p-3 mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="event-icon">
+            <i class="bi bi-music-note-beamed"></i>
+          </div>
+          <div>
+            <div class="fw-bold" style="font-size:0.97rem; color:#1e293b;">
+              {{ event.event_title }}
+            </div>
+            <div class="mt-1 mb-1">
+              {% for artist in event.artists %}
+                <span class="artist-badge">{{ artist }}</span>
+              {% endfor %}
+            </div>
+            <div style="font-size:0.78rem; color:#94a3b8;">
+              <i class="bi bi-calendar3 me-1"></i>{{ event.event_datetime }}
+              &nbsp;
+              <i class="bi bi-geo-alt me-1"></i>{{ event.venue_name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="checkout-card p-4">
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 mb-3" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" id="checkoutForm">
+          {% csrf_token %}
+
+          <!-- Pilih Kategori Tiket -->
+          <div class="section-label">Pilih Kategori Tiket</div>
+          <div class="section-sub">Setiap kategori memiliki fasilitas berbeda.</div>
+
+          {% for cat in categories %}
+            <label class="category-item {% if forloop.last %}selected{% endif %}"
+                   id="cat-label-{{ cat.id }}"
+                   onclick="selectCategory(this, '{{ cat.id }}', {{ cat.price }})">
+              <input type="radio" name="category_id" value="{{ cat.id }}"
+                     {% if forloop.last %}checked{% endif %}>
+              <div>
+                <div class="cat-name">{{ cat.name }}</div>
+                <div class="cat-quota">Kuota: {{ cat.quota }} tiket</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="cat-price">Rp {{ cat.price|floatformat:0 }}</span>
+                {% if forloop.last %}
+                  <div class="check-icon" id="check-{{ cat.id }}">
+                    <i class="bi bi-check"></i>
+                  </div>
+                {% else %}
+                  <div class="check-icon d-none" id="check-{{ cat.id }}">
+                    <i class="bi bi-check"></i>
+                  </div>
+                {% endif %}
+              </div>
+            </label>
+          {% empty %}
+            <div class="alert alert-warning">Tidak ada kategori tiket tersedia.</div>
+          {% endfor %}
+
+          <!-- Jumlah Tiket & Pilih Kursi -->
+          <div class="row g-3 mt-1 mb-3">
+
+            <!-- Jumlah Tiket -->
+            <div class="col-md-5">
+              <div class="checkout-card p-3 h-100" style="box-shadow:none; border:1.5px solid #e2e8f0 !important;">
+                <div class="section-label mb-2">Jumlah Tiket</div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                  <input type="number" name="quantity" id="qtyInput"
+                         class="qty-input" value="2" min="1" max="10">
+                  <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                </div>
+                <div style="font-size:0.73rem; color:#94a3b8; margin-top:8px;">
+                  Maks 10 tiket per transaksi
+                </div>
+              </div>
+            </div>
+
+            <!-- Pilih Kursi -->
+            <div class="col-md-7">
+              <div class="checkout-card p-3 h-100" style="box-shadow:none; border:1.5px solid #e2e8f0 !important;">
+                <div class="section-label mb-2">Pilih Kursi</div>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for seat in seats %}
+                    <button type="button"
+                            class="seat-btn"
+                            onclick="toggleSeat(this, '{{ seat.seat_id }}')"
+                            data-seat-id="{{ seat.seat_id }}">
+                      {{ seat.row_number }}{{ seat.seat_number|slice:"3:" }}
+                    </button>
+                  {% empty %}
+                    <span style="font-size:0.8rem; color:#94a3b8;">
+                      Venue ini tidak memiliki reserved seating.
+                    </span>
+                  {% endfor %}
+                </div>
+                <!-- Hidden input untuk seat yang dipilih -->
+                <input type="hidden" name="seat_ids" id="selectedSeats" value="">
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Kode Promo -->
+          <div class="checkout-card p-3 mb-4" style="box-shadow:none; border:1.5px solid #e2e8f0 !important;">
+            <div class="section-label mb-2">Kode Promo</div>
+            <div class="d-flex">
+              <input type="text" name="promo_code" class="promo-input"
+                     placeholder="CONTOH: TIKTAK20"
+                     value="{{ request.POST.promo_code|default:'' }}">
+              <button type="submit" name="apply_promo" class="promo-btn">Terapkan</button>
+            </div>
+            {% if promo_error %}
+              <div style="color:#ef4444; font-size:0.78rem; margin-top:6px;">
+                {{ promo_error }}
+              </div>
+            {% endif %}
+            {% if promo_success %}
+              <div style="color:#22c55e; font-size:0.78rem; margin-top:6px;">
+                {{ promo_success }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Tombol Bayar (tersembunyi di kolom kiri, yang aktif di sidebar) -->
+          <button type="submit" name="place_order" id="payBtn" class="pay-btn d-lg-none">
+            Bayar Sekarang
+          </button>
+
+        </form>
+      </div>
+    </div>
+    <!-- /Kolom Kiri -->
+
+    <!-- ===== KOLOM KANAN: Ringkasan ===== -->
+    <div class="col-lg-5">
+      <div class="summary-card p-4">
+        <div class="fw-bold mb-3" style="font-size:0.97rem; color:#1e293b;">
+          Ringkasan Pesanan
+        </div>
+        <hr style="border-color:#f1f5f9; margin: 12px 0;">
+
+        <div class="summary-row mb-2">
+          <span id="summaryLabel">Category 2 × 2</span>
+          <span id="summarySubtotal">Rp 500,000</span>
+        </div>
+        <div class="summary-row mb-3">
+          <span>Biaya Layanan</span>
+          <span>Rp 0</span>
+        </div>
+
+        <hr style="border-color:#f1f5f9; margin: 12px 0;">
+
+        <div class="summary-total mb-4">
+          <span>Total</span>
+          <span class="summary-total-price" id="summaryTotal">Rp 500,000</span>
+        </div>
+
+        <!-- Tombol Bayar di sidebar (desktop) -->
+        <button type="submit" form="checkoutForm" name="place_order" class="pay-btn mb-3">
+          Bayar Sekarang
+        </button>
+
+        <div style="font-size:0.73rem; color:#94a3b8; text-align:center;">
+          Konfirmasi tiket akan dikirim ke admin@example.com
+        </div>
+      </div>
+    </div>
+    <!-- /Kolom Kanan -->
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Data kategori dari Django (untuk update ringkasan)
+  const categories = {
+    {% for cat in categories %}
+      "{{ cat.category_id }}": {
+        name:  "{{ cat.category_name }}",
+        price: {{ cat.price }}
+      },
+    {% endfor %}
+  };
+
+  let selectedCategoryId   = null;
+  let selectedCategoryPrice = 0;
+  let selectedCategoryName  = '';
+
+  // Set default ke kategori terakhir (sesuai tampilan referensi)
+  {% if categories %}
+    selectedCategoryId    = "{{ categories.0.category_id }}";
+    selectedCategoryPrice = {{ categories.0.price }};
+    selectedCategoryName  = "{{ categories.0.category_name }}";
+  {% endif %}
+
+  function selectCategory(el, catId, price) {
+      // Hapus selected dari semua item
+      document.querySelectorAll('.category-item').forEach(item => {
+          item.classList.remove('selected');
+          const icon = item.querySelector('.check-icon');
+          if (icon) icon.classList.add('d-none');
+      });
+
+      // Tandai item yang diklik
+      el.classList.add('selected');
+
+      // Cari check-icon di dalam label yang diklik langsung
+      const icon = el.querySelector('.check-icon');
+      if (icon) icon.classList.remove('d-none');
+
+      // Update variabel ringkasan
+      selectedCategoryId    = catId;
+      selectedCategoryPrice = price;
+      selectedCategoryName  = categories[catId] ? categories[catId].name : '';
+
+      updateSummary();
+  }
+
+  function changeQty(delta) {
+    const input = document.getElementById('qtyInput');
+    let val = parseInt(input.value) + delta;
+    if (val < 1)  val = 1;
+    if (val > 10) val = 10;
+    input.value = val;
+    updateSummary();
+  }
+
+  document.getElementById('qtyInput').addEventListener('input', updateSummary);
+
+  function updateSummary() {
+    const qty      = parseInt(document.getElementById('qtyInput').value) || 1;
+    const subtotal = selectedCategoryPrice * qty;
+
+    document.getElementById('summaryLabel').textContent =
+      (selectedCategoryName || 'Kategori') + ' × ' + qty;
+
+    document.getElementById('summarySubtotal').textContent =
+      'Rp ' + subtotal.toLocaleString('id-ID');
+
+    document.getElementById('summaryTotal').textContent =
+      'Rp ' + subtotal.toLocaleString('id-ID');
+  }
+
+  // Toggle pilih kursi
+  const selectedSeatIds = new Set();
+  function toggleSeat(btn, seatId) {
+    btn.classList.toggle('selected');
+    if (selectedSeatIds.has(seatId)) {
+      selectedSeatIds.delete(seatId);
+    } else {
+      selectedSeatIds.add(seatId);
+    }
+    document.getElementById('selectedSeats').value =
+      Array.from(selectedSeatIds).join(',');
+  }
+
+  // Init ringkasan saat load
+  updateSummary();
+</script>
+{% endblock %}

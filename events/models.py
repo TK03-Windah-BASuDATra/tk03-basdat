@@ -3,7 +3,6 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
-
 class Venue(models.Model):
     SEATING_CHOICES = [
         ('reserved', 'Reserved Seating'),
@@ -64,3 +63,5 @@ class TicketCategory(models.Model):
 
     def __str__(self):
         return f'{self.category_name} - {self.event.event_title}'
+    
+

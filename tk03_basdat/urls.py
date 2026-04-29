@@ -8,5 +8,6 @@ urlpatterns = [
     path('ticket-category/', include('ticket_category.urls')),
     path("accounts/", include("accounts.urls")),
     path('events/', include('events.urls')),
+    path('orders/', include('orders.urls')),
 ]
 

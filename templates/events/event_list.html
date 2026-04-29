@@ -74,6 +74,9 @@
 
           <div class="card-footer bg-white border-0 px-4 pb-4">
             <a href="#" class="btn btn-primary w-100 rounded-pill">Lihat Detail</a>
+            {% if user.is_authenticated %}
+              <a href="{% url 'orders:checkout' event.event_id %}" class="btn btn-success w-100 rounded-pill mt-2">Beli Tiket</a>
+            {% endif %}
           </div>
         </div>
       </div>
