@@ -44,7 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'artist',
     'ticket_category'
+    'accounts',
+    'events',
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -61,7 +68,7 @@ ROOT_URLCONF = 'tk03_basdat.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -80,36 +87,21 @@ WSGI_APPLICATION = 'tk03_basdat.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Database configuration
-if PRODUCTION:
     # Production: gunakan PostgreSQL dengan kredensial dari environment variables
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT'),
-            'OPTIONS': {
-                'options': f"-c search_path={os.getenv('SCHEMA', 'public')}"
-            }
-        }
-    }
-else:
-    # Development: gunakan SQLite
-    DATABASES = {
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tiktaktuk_db',
-        'USER': 'ahmad.omar',
-        'PASSWORD': '011001',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
         'OPTIONS': {
-            'options': '-c search_path=windah_basudatra'
+            'options': f"-c search_path={os.getenv('SCHEMA', 'public')}"
         }
     }
-    }
+}
+    
 
 
 # Password validation

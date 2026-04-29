@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Venue{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <h1 class="page-title mb-1">Manajemen Venue</h1>
+    <p class="text-muted mb-0">Kelola lokasi penyelenggaraan acara dan lihat venue yang tersedia.</p>
+  </div>
+
+  {% if can_manage %}
+    <a href="{% url 'venue_create' %}" class="btn btn-primary rounded-pill px-4">
+      + Tambah Venue
+    </a>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card stat-card p-3">
+      <div class="text-muted small">Total Venue</div>
+      <div class="fs-3 fw-bold">{{ stats.total_venue }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card p-3">
+      <div class="text-muted small">Reserved Seating</div>
+      <div class="fs-3 fw-bold">{{ stats.reserved_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card p-3">
+      <div class="text-muted small">Total Kapasitas</div>
+      <div class="fs-3 fw-bold">{{ stats.total_capacity }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card card-soft mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-5">
+        <label class="form-label">Cari venue</label>
+        <input type="text" name="q" class="form-control" placeholder="Cari nama atau alamat venue" value="{{ request.GET.q }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Kota</label>
+        <select name="city" class="form-select">
+          <option value="">Semua Kota</option>
+          {% for c in cities %}
+            <option value="{{ c }}" {% if request.GET.city == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tipe Seating</label>
+        <select name="seating" class="form-select">
+          <option value="">Semua</option>
+          <option value="reserved" {% if request.GET.seating == 'reserved' %}selected{% endif %}>Reserved</option>
+          <option value="free" {% if request.GET.seating == 'free' %}selected{% endif %}>Free</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+        <a href="{% url 'venue_list' %}" class="btn btn-outline-secondary w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if venues %}
+  <div class="row g-4">
+    {% for venue in venues %}
+      <div class="col-lg-6">
+        <div class="card card-soft h-100">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h4 class="mb-1">{{ venue.venue_name }}</h4>
+                <div class="text-muted">{{ venue.city }}</div>
+              </div>
+              <span class="badge-soft">{{ venue.get_seating_type_display }}</span>
+            </div>
+
+            <div class="mb-3">
+              <div class="small text-muted">Alamat</div>
+              <div>{{ venue.address }}</div>
+            </div>
+
+            <div class="mb-3">
+              <div class="small text-muted">Kapasitas</div>
+              <div class="fw-semibold">{{ venue.capacity }} kursi</div>
+            </div>
+
+            {% if can_manage %}
+              <div class="d-flex gap-2">
+                <a href="{% url 'venue_update' venue.venue_id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                  Edit
+                </a>
+                <a href="{% url 'venue_delete' venue.venue_id %}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                  Hapus
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card card-soft">
+    <div class="card-body text-center py-5">
+      <h5 class="mb-2">Belum ada venue</h5>
+      <p class="text-muted mb-0">Coba ubah filter atau tambahkan venue baru.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
