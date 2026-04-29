@@ -2,43 +2,121 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db import connection
+
+
+def _get_role(request):
+    if not request.user.is_authenticated:
+        return 'guest'
+    if request.user.is_superuser:
+        return 'admin'
+    return getattr(request.user, 'role', 'customer')
 
 
 @login_required
 def checkout(request, event_id):
-    """Halaman checkout tiket - data dummy untuk frontend."""
 
-    # Data dummy event
+    # Ambil data event + artis
+    with connection.cursor() as cur:
+        cur.execute('''
+            SELECT
+                e.event_id,
+                e.event_title,
+                e.event_datetime,
+                v.venue_name,
+                v.venue_id
+            FROM windah_basudatra.event e
+            JOIN windah_basudatra.venue v ON e.venue_id = v.venue_id
+            WHERE e.event_id = %s
+        ''', [str(event_id)])
+        row = cur.fetchone()
+
+    if not row:
+        messages.error(request, 'Event tidak ditemukan.')
+        return redirect('event_list')
+
     event = {
-        'event_id':       event_id,
-        'event_title':    'Konser Melodi Senja',
-        'event_datetime': '2024-05-15 19:00',
-        'venue_name':     'Jakarta Convention Center',
-        'artists':        ['Fourtwnty', 'Hindia'],
+        'event_id':       str(row[0]),
+        'event_title':    row[1],
+        'event_datetime': row[2].strftime('%Y-%m-%d · %H:%M') if row[2] else '-',
+        'venue_name':     row[3],
+        'venue_id':       str(row[4]),
     }
 
-    # Data dummy kategori tiket
-    categories = [
-        {'id': 1, 'name': 'WVIP',       'quota': 50,  'price': 1500000},
-        {'id': 2, 'name': 'VIP',        'quota': 150, 'price': 750000},
-        {'id': 3, 'name': 'Category 1', 'quota': 300, 'price': 450000},
-        {'id': 4, 'name': 'Category 2', 'quota': 500, 'price': 250000},
-    ]
+    # Ambil artis event ini
+    with connection.cursor() as cur:
+        cur.execute('''
+            SELECT a.name
+            FROM windah_basudatra.artist a
+            JOIN windah_basudatra.event_artist ea ON a.artist_id = ea.artist_id
+            WHERE ea.event_id = %s
+            ORDER BY ea.role
+        ''', [str(event_id)])
+        event['artists'] = [r[0] for r in cur.fetchall()]
 
-    # Data dummy kursi
-    seats = ['A1','A2','A3','A4','A5','B1','B2','B3','B4','B5','C1','C2']
+    # Ambil kategori tiket
+    with connection.cursor() as cur:
+        cur.execute('''
+            SELECT
+                category_id,
+                category_name,
+                quota,
+                price
+            FROM windah_basudatra.ticket_category
+            WHERE event_id = %s AND quota > 0
+            ORDER BY price DESC
+        ''', [str(event_id)])
+        cols       = [c[0] for c in cur.description]
+        categories = [dict(zip(cols, r)) for r in cur.fetchall()]
 
-    # Simulasi POST (Terapkan promo / Bayar)
+    # Konversi price ke float agar bisa di-serialize ke JSON di template
+    for cat in categories:
+        cat['category_id'] = str(cat['category_id'])
+        cat['price']       = float(cat['price'])
+
+    # Ambil kursi venue ini
+    with connection.cursor() as cur:
+        cur.execute('''
+            SELECT
+                seat_id,
+                section,
+                seat_number,
+                row_number
+            FROM windah_basudatra.seat
+            WHERE venue_id = %s
+            ORDER BY section, row_number, seat_number
+        ''', [event['venue_id']])
+        cols  = [c[0] for c in cur.description]
+        seats = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    for seat in seats:
+        seat['seat_id'] = str(seat['seat_id'])
+
     promo_error   = None
     promo_success = None
-    selected_cat  = None
-    quantity      = 1
+    promo_discount = 0
 
     if request.method == 'POST':
+
         if 'apply_promo' in request.POST:
             promo_code = request.POST.get('promo_code', '').strip()
-            if promo_code == 'TIKTAK20':
-                promo_success = f'Promo "{promo_code}" berhasil diterapkan! Diskon 20%.'
+            with connection.cursor() as cur:
+                cur.execute('''
+                    SELECT promotion_id, discount_type, discount_value
+                    FROM windah_basudatra.promotion
+                    WHERE promo_code = %s
+                      AND start_date <= CURRENT_DATE
+                      AND end_date   >= CURRENT_DATE
+                ''', [promo_code])
+                promo = cur.fetchone()
+
+            if promo:
+                discount_type  = promo[1]
+                discount_value = float(promo[2])
+                if discount_type == 'PERCENTAGE':
+                    promo_success = f'Promo "{promo_code}" valid! Diskon {discount_value:.0f}%.'
+                else:
+                    promo_success = f'Promo "{promo_code}" valid! Diskon Rp {discount_value:,.0f}.'
             else:
                 promo_error = 'Kode promo tidak valid.'
 
@@ -52,82 +130,95 @@ def checkout(request, event_id):
         'seats':         seats,
         'promo_error':   promo_error,
         'promo_success': promo_success,
-        'quantity':      quantity,
     }
-    return render(request, 'orders/checkout.html', context)
+    return render(request, 'checkout.html', context)
 
 
 @login_required
 def order_list(request):
-    """Halaman daftar order - data dummy untuk frontend."""
 
-    user = request.user
-    role = getattr(user, 'role', 'customer')
+    role = _get_role(request)
 
-    # Data dummy orders
-    all_orders = [
-        {
-            'order_id':       'ord_001',
-            'order_date':     '2024-04-10 14:32',
-            'payment_status': 'Paid',
-            'total_amount':   1200000,
-            'customer_name':  'Budi Santoso',
-            'customer_initial': 'B',
-        },
-        {
-            'order_id':       'ord_002',
-            'order_date':     '2024-04-11 09:15',
-            'payment_status': 'Paid',
-            'total_amount':   150000,
-            'customer_name':  'Budi Santoso',
-            'customer_initial': 'B',
-        },
-        {
-            'order_id':       'ord_003',
-            'order_date':     '2024-04-12 18:44',
-            'payment_status': 'Pending',
-            'total_amount':   1500000,
-            'customer_name':  'Siti Rahayu',
-            'customer_initial': 'S',
-        },
-        {
-            'order_id':       'ord_004',
-            'order_date':     '2024-04-13 11:00',
-            'payment_status': 'Cancelled',
-            'total_amount':   700000,
-            'customer_name':  'Siti Rahayu',
-            'customer_initial': 'S',
-        },
-    ]
-
-    # Filter sesuai role
-    if role == 'customer':
-        # Customer hanya lihat miliknya sendiri (dummy: ambil 2 pertama)
-        orders = all_orders[:2]
-    else:
-        # Admin & Organizer lihat semua
-        orders = all_orders
-
-    # Filter pencarian & status dari GET
     search_query  = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '')
 
+    if role == 'admin' or request.user.is_superuser:
+        sql = '''
+            SELECT
+                o.order_id,
+                o.order_date,
+                o.payment_status,
+                o.total_amount,
+                c.full_name AS customer_name
+            FROM windah_basudatra."order" o
+            JOIN windah_basudatra.customer c ON o.customer_id = c.customer_id
+            WHERE 1=1
+        '''
+        params = []
+
+    elif role == 'organizer':
+        sql = '''
+            SELECT DISTINCT
+                o.order_id,
+                o.order_date,
+                o.payment_status,
+                o.total_amount,
+                c.full_name AS customer_name
+            FROM windah_basudatra."order" o
+            JOIN windah_basudatra.customer c         ON o.customer_id = c.customer_id
+            JOIN windah_basudatra.ticket t           ON t.order_id = o.order_id
+            JOIN windah_basudatra.ticket_category tc ON tc.category_id = t.category_id
+            JOIN windah_basudatra.event e            ON e.event_id = tc.event_id
+            JOIN windah_basudatra.organizer org      ON org.organizer_id = e.organizer_id
+            JOIN windah_basudatra.user_account u     ON u.user_id = org.user_id
+            WHERE u.username = %s
+        '''
+        params = [request.user.username]
+
+    else:
+        sql = '''
+            SELECT
+                o.order_id,
+                o.order_date,
+                o.payment_status,
+                o.total_amount,
+                c.full_name AS customer_name
+            FROM windah_basudatra."order" o
+            JOIN windah_basudatra.customer c    ON o.customer_id = c.customer_id
+            JOIN windah_basudatra.user_account u ON u.user_id = c.user_id
+            WHERE u.username = %s
+        '''
+        params = [request.user.username]
+
     if search_query:
-        orders = [o for o in orders if search_query.lower() in o['order_id'].lower()]
+        sql += ' AND CAST(o.order_id AS TEXT) ILIKE %s'
+        params.append(f'%{search_query}%')
 
     if status_filter:
-        orders = [o for o in orders if o['payment_status'] == status_filter]
+        sql += ' AND o.payment_status = %s'
+        params.append(status_filter)
 
-    # Statistik ringkasan
+    sql += ' ORDER BY o.order_date DESC'
+
+    with connection.cursor() as cur:
+        cur.execute(sql, params)
+        cols   = [c[0] for c in cur.description]
+        orders = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    # Konversi tipe data
+    for o in orders:
+        o['order_id']     = str(o['order_id'])
+        o['total_amount'] = float(o['total_amount'])
+        o['order_date']   = o['order_date'].strftime('%Y-%m-%d %H:%M') if o['order_date'] else '-'
+
     total_order   = len(orders)
-    total_paid    = sum(1 for o in orders if o['payment_status'] == 'Paid')
-    total_pending = sum(1 for o in orders if o['payment_status'] == 'Pending')
-    total_revenue = sum(o['total_amount'] for o in orders if o['payment_status'] == 'Paid')
+    total_paid    = sum(1 for o in orders if o['payment_status'] == 'PAID')
+    total_pending = sum(1 for o in orders if o['payment_status'] == 'PENDING')
+    total_revenue = sum(o['total_amount'] for o in orders if o['payment_status'] == 'PAID')
 
     context = {
         'orders':        orders,
-        'role':          role,
-        'is_admin':      role == 'admin' or user.is_superuser,
+        'is_admin':      role == 'admin' or request.user.is_superuser,
         'is_organizer':  role == 'organizer',
         'is_customer':   role == 'customer',
         'search_query':  search_query,
@@ -137,9 +228,9 @@ def order_list(request):
         'total_pending': total_pending,
         'total_revenue': total_revenue,
         'status_choices': [
-            ('Paid',      'Lunas'),
-            ('Pending',   'Pending'),
-            ('Cancelled', 'Dibatalkan'),
+            ('PAID',    'Lunas'),
+            ('PENDING', 'Pending'),
+            ('FAILED',  'Gagal'),
         ],
     }
     return render(request, 'orders/order_list.html', context)
