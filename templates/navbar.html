@@ -9,7 +9,7 @@
     <div class="collapse navbar-collapse" id="navbarMain">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-        {% if not request.user.is_authenticated %}
+        {% if not role %}
           <li class="nav-item">
             <a class="nav-link link-primary" href="{% url 'login' %}">Login</a>
           </li>
@@ -19,7 +19,7 @@
 
         {% else %}
 
-          {% if request.user.is_superuser or request.user.role == "admin" %}
+          {% if role == "admin" %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
             </li>
@@ -45,7 +45,7 @@
               <a class="nav-link" href="{% url 'order_aset' %}">Order (Aset)</a>
             </li>
 
-          {% elif request.user.role == "organizer" %}
+          {% elif role == "organizer" %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
             </li>
@@ -74,7 +74,7 @@
               <a class="nav-link" href="{% url 'order_aset' %}">Order (Aset)</a>
             </li>
 
-          {% elif request.user.role == "customer" %}
+          {% elif role == "customer" %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
             </li>
@@ -102,8 +102,10 @@
       </ul>
 
       <div class="d-flex align-items-center gap-2">
-        {% if request.user.is_authenticated %}
-          <span class="text-muted small">Hi, {{ request.user.username }}</span>
+        {% if role %}
+        <!-- ini nanti ganti pake username -->
+          <!-- <span class="text-muted small">Hi, {{ request.user.username }}</span> -->
+          <span class="text-muted small">Hi, {{ role|title }}</span>
           <a href="{% url 'profile' %}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
           <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
         {% endif %}

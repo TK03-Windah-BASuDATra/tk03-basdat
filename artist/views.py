@@ -55,7 +55,7 @@ def artist_list(request):
 
     context = {
         'artists': artists,
-        'artists_json': json.dumps(artists, default=str), # Data untuk diolah artist.js
+        'artists_json': json.dumps(artists, default=str),
         'total_genre': len(genres),
         'total_tampil': total_tampil,
         'can_manage': _can_manage(role),
