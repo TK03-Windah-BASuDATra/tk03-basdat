@@ -494,13 +494,16 @@ function closeDelete(){
 ====================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    const savedView = localStorage.getItem('artistView');  
-    if (savedView) currentView = savedView;               
+    // Pindahin overlay ke body biar lepas dari wrapper base.html
+    document.body.appendChild(document.getElementById('formOverlay'));
+    document.body.appendChild(document.getElementById('deleteOverlay'));
+
+    const savedView = localStorage.getItem('artistView');
+    if (savedView) currentView = savedView;
 
     buildGenreMenu();
     render();
 
-    // sync tombol pill sesuai saved view
     document.getElementById("btn-view-table").classList.toggle("active", currentView === "table");
     document.getElementById("btn-view-grid").classList.toggle("active", currentView === "grid");
 
