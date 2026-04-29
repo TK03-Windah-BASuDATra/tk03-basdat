@@ -8,6 +8,7 @@ from events.models import Event, TicketCategory, Promotion
 from accounts.models import Customer
 from .models import Order, Ticket, HasRelationship, OrderPromotion
 from .forms import CheckoutForm
+from django.db.models import Q, Count, Sum
 
 
 @login_required
@@ -98,3 +99,76 @@ def checkout(request, event_id):
         'event': event,
         'form': form,
     })
+
+@login_required
+def order_list(request):
+    user = request.user
+
+    # Ambil role user dari session/account
+    # Sesuaikan dengan cara app accounts menyimpan role
+    is_admin     = user.account_role.filter(role__role_name='Admin').exists()
+    is_organizer = user.account_role.filter(role__role_name='Organizer').exists()
+    is_customer  = user.account_role.filter(role__role_name='Customer').exists()
+
+    # --- Filter data sesuai role ---
+    if is_admin:
+        orders = Order.objects.select_related('customer').all()
+
+    elif is_organizer:
+        # Organizer hanya melihat order dari eventnya sendiri
+        # Jalur: ORDER → TICKET → TICKET_CATEGORY → EVENT → ORGANIZER
+        try:
+            organizer = request.user.organizer  # relasi OneToOne dari accounts
+            orders = Order.objects.filter(
+                tickets__category__event__organizer=organizer
+            ).select_related('customer').distinct()
+        except Exception:
+            orders = Order.objects.none()
+
+    elif is_customer:
+        try:
+            customer = request.user.customer
+            orders = Order.objects.filter(
+                customer=customer
+            ).select_related('customer')
+        except Exception:
+            orders = Order.objects.none()
+
+    else:
+        orders = Order.objects.none()
+
+    # --- Pencarian berdasarkan Order ID ---
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        orders = orders.filter(
+            Q(order_id__icontains=search_query)
+        )
+
+    # --- Filter berdasarkan Payment Status ---
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        orders = orders.filter(payment_status=status_filter)
+
+    # --- Statistik ringkasan ---
+    total_order   = orders.count()
+    total_paid    = orders.filter(payment_status='Paid').count()
+    total_pending = orders.filter(payment_status='Pending').count()
+    total_revenue = orders.filter(
+        payment_status='Paid'
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    context = {
+        'orders':        orders,
+        'is_admin':      is_admin,
+        'is_organizer':  is_organizer,
+        'is_customer':   is_customer,
+        'search_query':  search_query,
+        'status_filter': status_filter,
+        'total_order':   total_order,
+        'total_paid':    total_paid,
+        'total_pending': total_pending,
+        'total_revenue': total_revenue,
+        'status_choices': Order.STATUS_CHOICES,
+    }
+
+    return render(request, 'orders/order_list.html', context)

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Daftar Order{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="page-title mb-1">Daftar Order</h1>
+  <p class="text-muted mb-0">
+    {% if is_customer %}
+      Riwayat pembelian tiket Anda.
+    {% elif is_organizer %}
+      Order dari event yang Anda selenggarakan.
+    {% else %}
+      Semua order yang terdaftar pada sistem.
+    {% endif %}
+  </p>
+</div>
+
+<!-- Statistik Ringkasan -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card card-soft text-center p-3">
+      <small class="text-muted text-uppercase fw-semibold">Total Order</small>
+      <div class="fs-3 fw-bold mt-1">{{ total_order }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-soft text-center p-3">
+      <small class="text-muted text-uppercase fw-semibold">Lunas</small>
+      <div class="fs-3 fw-bold mt-1 text-success">{{ total_paid }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-soft text-center p-3">
+      <small class="text-muted text-uppercase fw-semibold">Pending</small>
+      <div class="fs-3 fw-bold mt-1 text-warning">{{ total_pending }}</div>
+    </div>
+  </div>
+  {% if is_admin or is_organizer %}
+  <div class="col-6 col-md-3">
+    <div class="card card-soft text-center p-3">
+      <small class="text-muted text-uppercase fw-semibold">Total Revenue</small>
+      <div class="fs-4 fw-bold mt-1 text-primary">Rp{{ total_revenue|floatformat:0 }}</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Filter & Pencarian -->
+<div class="card card-soft mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Cari Order ID</label>
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Cari order ID..."
+               value="{{ search_query }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Payment Status</label>
+        <select name="status" class="form-select">
+          <option value="">Semua Status</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"
+              {% if status_filter == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary rounded-pill px-3 w-100">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabel Order -->
+<div class="card card-soft">
+  <div class="card-body p-0">
+    {% if orders %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="px-4 py-3">Order ID</th>
+              {% if is_organizer or is_admin %}
+                <th class="py-3">Pelanggan</th>
+              {% endif %}
+              <th class="py-3">Tanggal</th>
+              <th class="py-3">Status</th>
+              <th class="py-3">Total</th>
+              {% if is_admin %}
+                <th class="py-3 text-center">Aksi</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+              <tr>
+                <td class="px-4 py-3">
+                  <span class="font-monospace small">
+                    {{ order.order_id|stringformat:"s"|slice:":8" }}...
+                  </span>
+                </td>
+
+                {% if is_organizer or is_admin %}
+                  <td class="py-3">
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                           style="width:32px; height:32px;">
+                        <span class="text-primary fw-bold small">
+                          {{ order.customer.full_name|slice:":1"|upper }}
+                        </span>
+                      </div>
+                      <span>{{ order.customer.full_name }}</span>
+                    </div>
+                  </td>
+                {% endif %}
+
+                <td class="py-3">
+                  <small>{{ order.order_date|date:"Y-m-d H:i" }}</small>
+                </td>
+
+                <td class="py-3">
+                  {% if order.payment_status == 'Paid' %}
+                    <span class="badge text-bg-success">Lunas</span>
+                  {% elif order.payment_status == 'Pending' %}
+                    <span class="badge text-bg-warning text-dark">Pending</span>
+                  {% elif order.payment_status == 'Cancelled' %}
+                    <span class="badge text-bg-danger">Dibatalkan</span>
+                  {% endif %}
+                </td>
+
+                <td class="py-3 fw-semibold">
+                  Rp{{ order.total_amount|floatformat:0 }}
+                </td>
+
+                {% if is_admin %}
+                  <td class="py-3 text-center">
+                    <div class="d-flex justify-content-center gap-2">
+                      <a href="{% url 'orders:order_update' order.order_id %}"
+                         class="btn btn-outline-primary btn-sm"
+                         title="Update">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="{% url 'orders:order_delete' order.order_id %}"
+                         class="btn btn-outline-danger btn-sm"
+                         title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                {% endif %}
+
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    {% else %}
+      <div class="text-center py-5">
+        <h6 class="mb-1">Belum ada order</h6>
+        <p class="text-muted small mb-0">
+          {% if search_query or status_filter %}
+            Tidak ada order yang cocok dengan filter yang dipilih.
+          {% else %}
+            Belum ada transaksi yang tercatat.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
