@@ -6,9 +6,9 @@ from django.views.decorators.http import require_POST, require_GET
 
 
 def _get_role(request):
-    role = request.GET.get('role', 'user')
-    if role not in ('admin', 'organizer', 'user'):
-        role = 'user'
+    role = request.GET.get('role', 'customer')
+    if role not in ('admin', 'organizer', 'customer'):
+        role = 'customer'
     return role
 
 def _can_manage(role):
