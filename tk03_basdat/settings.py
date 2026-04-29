@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'events',
     'orders',
     'widget_tweaks',
+    'tickets',
 ]
 
 AUTH_USER_MODEL = "accounts.User"
