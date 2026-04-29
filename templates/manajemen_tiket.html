@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - TikTakTuk{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-header {display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem}
+  .btn-add-ticket{border-radius:8px;padding:.75rem 1.5rem;font-weight:600}
+  .stats-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;margin-bottom:2rem}
+  .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;box-shadow:0 4px 6px #00000012}
+  .stat-card .label{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.75rem}
+  .stat-card .value{font-size:2.5rem;font-weight:800;color:#1e293b}
+  .search-filter-container{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
+  .search-box{flex:1;min-width:280px;position:relative}
+  .search-box input{width:100%;padding:.75rem 1rem .75rem 2.5rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.95rem}
+  .search-box svg{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#94a3b8}
+  .filter-select{padding:.75rem 1rem;border:1px solid #e2e8f0;border-radius:8px;background:#fff;min-width:180px}
+  .tickets-grid{display:grid;gap:1.5rem}
+  .ticket-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;box-shadow:0 4px 6px #00000012}
+  .ticket-header-section{display:flex;gap:1.5rem;margin-bottom:1.5rem;align-items:flex-start}
+  .ticket-icon{width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;flex-shrink:0}
+  .ticket-title-section h3{font-size:1.2rem;font-weight:700;color:#1e293b;margin:0 0 .3rem 0}
+  .ticket-code{font-size:.85rem;color:#94a3b8;margin-bottom:.75rem}
+  .ticket-badges{display:flex;gap:.5rem}
+  .badge-custom{display:inline-block;padding:.35rem .75rem;border-radius:6px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .badge-valid{background:#d1fae5;color:#065f46}
+  .badge-terpakai{background:#fecaca;color:#991b1b}
+  .badge-category{background:#dbeafe;color:#1e40af}
+  .ticket-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid #e2e8f0}
+  .detail-group{display:flex;flex-direction:column}
+  .detail-group .label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.5rem}
+  .detail-group .value{font-size:1rem;font-weight:600;color:#1e293b}
+  .detail-group .value.secondary{font-size:.95rem;font-weight:500;color:#64748b}
+  .ticket-actions{display:flex;gap:.75rem}
+  .btn-action{display:flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;font-size:.9rem;font-weight:600;text-decoration:none}
+  .btn-action:hover{background:#f8fafc}
+  .btn-delete{color:#dc2626}
+  .btn-delete:hover{background:#fee2e2}
+  .empty-state{text-align:center;padding:3rem 1rem;color:#94a3b8}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header">
+    <div class="header-text">
+      <h1>{{ page_title }}</h1>
+      <p>Kelola tiket: tambah, ubah status, dan hapus tiket</p>
+    </div>
+    {% if show_add_button %}
+    <button class="btn btn-primary btn-add-ticket" data-bs-toggle="modal" data-bs-target="#ticketModal">
+      <span>+ Tambah Tiket</span>
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card"><div class="label">Total Tiket</div><div class="value">{{ total_tickets }}</div></div>
+    <div class="stat-card"><div class="label">Valid</div><div class="value">{{ valid_tickets }}</div></div>
+    <div class="stat-card"><div class="label">Terpakai</div><div class="value">{{ used_tickets }}</div></div>
+  </div>
+
+  <div class="search-filter-container">
+    <div class="search-box">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      <input type="text" id="searchInput" placeholder="Cari kode tiket atau nama acara..." class="search-input">
+    </div>
+    <select id="statusFilter" class="filter-select">
+      <option value="">Semua Status</option>
+      <option value="Valid">Valid</option>
+      <option value="Used">Terpakai</option>
+      <option value="Cancelled">Dibatalkan</option>
+    </select>
+  </div>
+
+  <div class="tickets-grid" id="ticketsContainer">
+    {% for ticket in tickets %}
+    <div class="ticket-card" data-id="{{ ticket.id }}" data-code="{{ ticket.code }}" data-event="{{ ticket.event }}" data-event-id="{{ ticket.event_id }}" data-status="{{ ticket.status }}" data-seat="{{ ticket.seat }}">
+      <div class="ticket-header-section">
+        <div class="ticket-icon">🎫</div>
+        <div class="ticket-title-section">
+          <h3>{{ ticket.event }}</h3>
+          <div class="ticket-code">{{ ticket.code }}</div>
+          <div class="ticket-badges">
+            {% for category in ticket.categories %}
+              {% if category == "VALID" %}
+                <span class="badge-custom badge-valid">{{ category }}</span>
+              {% elif category == "TERPAKAI" %}
+                <span class="badge-custom badge-terpakai">{{ category }}</span>
+              {% else %}
+                <span class="badge-custom badge-category">{{ category }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-details">
+        <div class="detail-group"><div class="label">Jadwal</div><div class="value secondary">📅 {{ ticket.datetime }}</div></div>
+        <div class="detail-group"><div class="label">Lokasi</div><div class="value secondary">📍 {{ ticket.location }}</div></div>
+        <div class="detail-group"><div class="label">Kursi</div><div class="value secondary">{{ ticket.seat }}</div></div>
+        <div class="detail-group"><div class="label">Harga</div><div class="value">Rp {{ ticket.price|floatformat:0 }}</div></div>
+        <div class="detail-group"><div class="label">Order</div><div class="value secondary">{{ ticket.order_id }}</div></div>
+        {% if show_customer_column %}
+        <div class="detail-group"><div class="label">Pelanggan</div><div class="value secondary">{{ ticket.customer }}</div></div>
+        {% endif %}
+      </div>
+
+      {% if can_admin_actions %}
+      <div class="ticket-actions">
+        <button class="btn-action btn-update" data-bs-toggle="modal" data-bs-target="#updateTicketModal">✏️ Update</button>
+        <button class="btn-action btn-delete" data-bs-toggle="modal" data-bs-target="#deleteTicketModal">🗑️ Hapus</button>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="empty-state"><h3>Tidak ada tiket</h3><p>{% if show_add_button %}Klik "Tambah Tiket" untuk membuat tiket baru{% else %}Anda belum memiliki tiket apapun{% endif %}</p></div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="modal fade" id="ticketModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Tambah Tiket Baru</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Order</label>
+          <select class="form-select">
+            {% for o in orders %}
+            <option value="{{ o.order_id }}" data-event-id="{{ o.event_id }}">{{ o.order_id }} — {{ o.customer }} — {{ o.event }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kategori Tiket</label>
+          <select class="form-select">
+            {% for eid, cats in categories_by_event.items %}
+              {% for c in cats %}
+              <option value="{{ c.category_id }}" data-event-id="{{ eid }}" {% if c.used >= c.quota %}disabled{% endif %}>
+                {{ c.category_name }} — Rp {{ c.price|floatformat:0 }} ({{ c.used }}/{{ c.quota }})
+              </option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kursi <span class="text-muted">(opsional — reserved seating)</span></label>
+          <select class="form-select">
+            <option value="">Tanpa Kursi</option>
+            {% for eid, seat_list in seats_by_event.items %}
+              {% for s in seat_list %}
+              <option value="{{ s.seat_id }}" data-event-id="{{ eid }}" {% if not s.available %}disabled{% endif %}>{{ s.label }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Kode Tiket</label>
+          <input class="form-control" placeholder="Auto-generate saat dibuat" disabled>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary">Buat Tiket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="updateTicketModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold">Update Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Kode Tiket</label><input type="text" class="form-control" id="updCode" readonly></div>
+        <div class="mb-3"><label class="form-label">Status</label><select class="form-select" id="updStatus"><option value="Valid">Valid</option><option value="Used">Terpakai</option><option value="Cancelled">Dibatalkan</option></select></div>
+        <div class="mb-2"><label class="form-label">Kursi <span class="text-muted">(opsional)</span></label><select class="form-select" id="updSeat"><option value="">Tanpa Kursi</option></select></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="btnSaveUpdate">Simpan</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteTicketModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Hapus Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body"><p>Apakah Anda yakin ingin menghapus tiket ini? Relasi kursi akan dilepaskan. Tindakan ini tidak dapat dibatalkan.</p></div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="btnConfirmDelete">Hapus</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // TODO search+filter
+  // TODO implement delete (backend)
+  // TODO implement update (backend)
+</script>
+{% endblock %}

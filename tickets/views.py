@@ -68,14 +68,33 @@ def manajemen_tiket(request):
     # TODO: Replace w real available seats per event from db
     seats_by_event = {
         "evt_001": [
-            {"id": "seat_001", "label": "VIP — Baris B, No. 1", "available": True},
-            {"id": "seat_002", "label": "VIP — Baris B, No. 2", "available": True},
-            {"id": "seat_003", "label": "VIP — Baris B, No. 3", "available": False},
-            {"id": "seat_010", "label": "Regular — Bebas Duduk", "available": True},
+            {"seat_id": "seat_001", "label": "VIP — Baris B, No. 1", "available": True},
+            {"seat_id": "seat_002", "label": "VIP — Baris B, No. 2", "available": True},
+            {"seat_id": "seat_003", "label": "VIP — Baris B, No. 3", "available": False},
+            {"seat_id": "seat_010", "label": "Regular — Bebas Duduk", "available": True},
         ],
         "evt_002": [
-            {"id": "seat_101", "label": "WVIP — Baris A, No. 1", "available": True},
-            {"id": "seat_102", "label": "WVIP — Baris A, No. 2", "available": True},
+            {"seat_id": "seat_101", "label": "WVIP — Baris A, No. 1", "available": True},
+            {"seat_id": "seat_102", "label": "WVIP — Baris A, No. 2", "available": True},
+        ],
+    }
+
+    # TODO Replace w real orders from db
+    orders = [
+        {"order_id": "ord_001", "customer": "Budi Santoso", "event": "Konser Melodi Senja", "event_id": "evt_001"},
+        {"order_id": "ord_002", "customer": "Siti Nurhaliza", "event": "Festival Musik 2026", "event_id": "evt_002"},
+        {"order_id": "ord_003", "customer": "Ahmad Wijaya", "event": "Konser Melodi Senja", "event_id": "evt_001"},
+    ]
+
+    # TODO Replace w real ticket categories per event from db
+    categories_by_event = {
+        "evt_001": [
+            {"category_id": "cat_001", "category_name": "VIP", "price": 750000, "used": 3, "quota": 150},
+            {"category_id": "cat_002", "category_name": "Regular", "price": 350000, "used": 45, "quota": 200},
+        ],
+        "evt_002": [
+            {"category_id": "cat_003", "category_name": "WVIP", "price": 1000000, "used": 10, "quota": 50},
+            {"category_id": "cat_004", "category_name": "VIP", "price": 600000, "used": 25, "quota": 100},
         ],
     }
     
@@ -109,6 +128,8 @@ def manajemen_tiket(request):
         "user_role": user_role,
         "seats_by_event": seats_by_event,
         "can_admin_actions": can_admin_actions,
+        "orders": orders,
+        "categories_by_event": categories_by_event,
     }
     
-    return render(request, "tickets/manajemen_tiket.html", context)
+    return render(request, "manajemen_tiket.html", context)
