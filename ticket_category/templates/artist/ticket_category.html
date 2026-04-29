@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kategori Tiket{% endblock %}
+{% block nav_ticket %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ticket_category.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Kategori Tiket</div>
+    <div class="page-sub">Kelola kategori dan harga tiket per acara</div>
+  </div>
+  {% if can_manage %}
+  <button class="btn-primary" id="addBtn" onclick="openCreate()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Tambah Kategori Tiket
+  </button>
+  {% endif %}
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat-card">
+    <div>
+      <div class="stat-label">Total Kategori</div>
+      <div class="stat-value" id="statTotal">{{ tickets|length }}</div>
+    </div>
+    <div class="stat-icon primary">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 00-4 0v2"/>
+      </svg>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div>
+      <div class="stat-label">Total Kuota</div>
+      <div class="stat-value" id="statKuota">{{ total_kuota }}</div>
+    </div>
+    <div class="stat-icon accent">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div>
+      <div class="stat-label">Harga Tertinggi</div>
+      <div class="stat-value" id="statHarga">{{ harga_tertinggi }}</div>
+    </div>
+    <div class="stat-icon warning">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-row1">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" class="search-input" id="searchInput"
+             placeholder="Cari kategori..." oninput="render()">
+    </div>
+    <select class="filter-select" id="acaraFilter" onchange="render()">
+      <option value="all">Semua Acara</option>
+    </select>
+  </div>
+  <div class="toolbar-row2">
+    <p class="result-count"><b id="countLabel">{{ tickets|length }}</b> kategori ditemukan</p>
+    <select class="view-select" id="viewSelect" onchange="switchView(this.value)">
+      <option value="table">☰ Tabel</option>
+      <option value="grid">⊞ Daftar</option>
+    </select>
+  </div>
+</div>
+
+<!-- TABLE VIEW -->
+<div id="table-view">
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Kategori</th>
+          <th>Acara</th>
+          <th>Harga</th>
+          <th>Kuota</th>
+          {% if can_manage %}<th class="right">Aksi</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- GRID VIEW -->
+<div id="grid-view" style="display:none">
+  <div class="ticket-grid" id="cardGrid"></div>
+</div>
+
+<!-- FORM MODAL -->
+<div class="overlay" id="formOverlay">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="closeForm()">✕</button>
+    <div class="modal-title" id="modalTitle">Tambah Kategori Tiket</div>
+    <div class="modal-desc">Lengkapi semua informasi kategori tiket.</div>
+
+    <form id="ticketForm" method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Acara <span class="req">*</span></label>
+        <select class="form-input" id="fAcara" name="acara">
+          <option value="">Pilih acara</option>
+        </select>
+        <div class="form-error show" id="errAcara"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nama Kategori <span class="req">*</span></label>
+        <input type="text" class="form-input" id="fKategori" name="kategori"
+               placeholder="VIP, Festival, Early Bird, ...">
+        <div class="form-error" id="errKategori"></div>
+      </div>
+      <div class="form-group">
+        <div class="form-row">
+          <div>
+            <label class="form-label">Harga (Rp) <span class="req">*</span></label>
+            <input type="number" class="form-input" id="fHarga" name="harga"
+                   placeholder="500000" min="0">
+            <div class="form-error" id="errHarga"></div>
+          </div>
+          <div>
+            <label class="form-label">Kuota <span class="req">*</span></label>
+            <input type="number" class="form-input" id="fKuota" name="kuota"
+                   placeholder="100" min="0">
+            <div class="form-error" id="errKuota"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeForm()">Batal</button>
+        <button type="submit" class="btn-submit" id="submitBtn"
+                onclick="return validateForm()">Tambah Kategori</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="overlay" id="deleteOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Hapus kategori?</div>
+    <p style="font-size:13px;color:var(--muted);margin-top:10px">
+      Anda akan menghapus kategori <strong id="delKategori"></strong>
+      untuk acara <strong id="delAcara"></strong>. Tindakan ini tidak dapat dibatalkan.
+    </p>
+    <form id="deleteForm" method="POST">
+      {% csrf_token %}
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeDelete()">Batal</button>
+        <button type="submit" class="btn-delete-confirm">Hapus</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Pass data dari Django ke JS — nanti dari query PostgreSQL di views.py #}
+<script>
+  const TICKETS_DATA    = {{ tickets_json|safe }};
+  const ACARA_LIST      = {{ acara_list_json|safe }};
+  const CAN_MANAGE      = {{ can_manage|yesno:"true,false" }};
+  const CREATE_URL      = "{% url 'ticket_category:create' %}?role={{ role }}";
+  const EDIT_URL_BASE   = "/ticket-category/";  {# append: {id}/data/ atau {id}/edit/ #}
+  const DELETE_URL_BASE = "/ticket-category/";  {# append: {id}/delete/ #}
+</script>
+<script src="{% static 'js/ticket_category.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,70 @@
+/* ── TICKET CATEGORY PAGE SPECIFIC STYLES ── */
+
+/* Filter select */
+.filter-select {
+  height: 38px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 10px;
+  font-size: 14px; font-family: inherit; color: var(--text);
+  background: var(--bg); cursor: pointer; min-width: 220px;
+  transition: border-color .15s;
+}
+.filter-select:focus { outline: none; border-color: var(--accent); background: white; }
+
+/* View select (native select) */
+.view-select {
+  height: 32px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; font-family: inherit; color: var(--text);
+  background: var(--bg); cursor: pointer; min-width: 110px;
+}
+.view-select:focus { outline: none; border-color: var(--accent); }
+
+/* Table extras */
+.td-price { font-weight: 700; font-size: 14px; }
+.td-quota { color: var(--text); font-size: 14px; font-weight: 600; }
+.td-quota .unit { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+/* Badge — override warna buat ticket */
+.badge-ticket {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  background: var(--gradient-primary);
+}
+
+/* Grid view */
+.ticket-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.ticket-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
+  position: relative; overflow: hidden;
+  transition: transform .15s, box-shadow .15s;
+}
+.ticket-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--gradient-primary);
+}
+.ticket-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.card-row1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.card-quota { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-quota .unit { font-size: 11px; color: var(--muted); font-weight: 500; }
+.card-event { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.card-price { font-size: 24px; font-weight: 800; letter-spacing: -.5px; margin-top: 6px; }
+.card-actions {
+  display: flex; gap: 8px; margin-top: 16px;
+  padding-top: 16px; border-top: 1px solid var(--border);
+}
+.card-actions .btn-outline,
+.card-actions .btn-danger-outline { font-size: 13px; padding: 6px 12px; }
+
+/* Form row 2 col */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 48px 16px;
+  color: var(--muted); font-size: 14px;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  background: var(--surface);
+}

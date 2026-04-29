@@ -1,174 +1,145 @@
-import uuid
-from django.shortcuts import render, redirect, get_object_or_404
+# orders/views.py
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.utils import timezone
-
-from events.models import Event, TicketCategory, Promotion
-from accounts.models import Customer
-from .models import Order, Ticket, HasRelationship, OrderPromotion
-from .forms import CheckoutForm
-from django.db.models import Q, Count, Sum
 
 
 @login_required
 def checkout(request, event_id):
-    """Halaman checkout tiket untuk Customer."""
-    # Hanya Customer yang boleh akses
-    try:
-        customer = Customer.objects.get(user=request.user)
-    except Customer.DoesNotExist:
-        messages.error(request, 'Hanya Customer yang dapat membeli tiket.')
-        return redirect('events:event_list')
+    """Halaman checkout tiket - data dummy untuk frontend."""
 
-    event = get_object_or_404(Event, pk=event_id)
-    form  = CheckoutForm(event=event)
+    # Data dummy event
+    event = {
+        'event_id':       event_id,
+        'event_title':    'Konser Melodi Senja',
+        'event_datetime': '2024-05-15 19:00',
+        'venue_name':     'Jakarta Convention Center',
+        'artists':        ['Fourtwnty', 'Hindia'],
+    }
 
-    # Hitung preview total (untuk ringkasan pesanan di sidebar)
-    preview_total = 0
-    selected_category = None
-    selected_quantity = 1
-    promo_error = None
+    # Data dummy kategori tiket
+    categories = [
+        {'id': 1, 'name': 'WVIP',       'quota': 50,  'price': 1500000},
+        {'id': 2, 'name': 'VIP',        'quota': 150, 'price': 750000},
+        {'id': 3, 'name': 'Category 1', 'quota': 300, 'price': 450000},
+        {'id': 4, 'name': 'Category 2', 'quota': 500, 'price': 250000},
+    ]
+
+    # Data dummy kursi
+    seats = ['A1','A2','A3','A4','A5','B1','B2','B3','B4','B5','C1','C2']
+
+    # Simulasi POST (Terapkan promo / Bayar)
+    promo_error   = None
+    promo_success = None
+    selected_cat  = None
+    quantity      = 1
 
     if request.method == 'POST':
-        form = CheckoutForm(event=event, data=request.POST)
-
-        # Jika tombol "Terapkan" promo ditekan — hanya validasi promo, tidak submit order
         if 'apply_promo' in request.POST:
-            # Re-render dengan pesan validasi promo dari form.clean
-            form.is_valid()  # trigger validation so promo error appears
-            return render(request, 'orders/checkout.html', {
-                'event': event,
-                'form': form,
-            })
+            promo_code = request.POST.get('promo_code', '').strip()
+            if promo_code == 'TIKTAK20':
+                promo_success = f'Promo "{promo_code}" berhasil diterapkan! Diskon 20%.'
+            else:
+                promo_error = 'Kode promo tidak valid.'
 
-        # Tombol "Bayar Sekarang"
-        if form.is_valid():
-            cd        = form.cleaned_data
-            category  = cd['category']
-            quantity  = cd['quantity']
-            seats     = cd.get('seats')
-            promo_obj = cd.get('promo_obj')
+        elif 'place_order' in request.POST:
+            messages.success(request, 'Pesanan berhasil dibuat!')
+            return redirect('pesanan')
 
-            # --- Hitung total ---
-            base_total = category.price * quantity
-            discount   = 0
-            if promo_obj:
-                if promo_obj.discount_type == 'PERCENTAGE':
-                    discount = base_total * (promo_obj.discount_value / 100)
-                else:  # NOMINAL
-                    discount = promo_obj.discount_value
-            total = max(base_total - discount, 0)
+    context = {
+        'event':         event,
+        'categories':    categories,
+        'seats':         seats,
+        'promo_error':   promo_error,
+        'promo_success': promo_success,
+        'quantity':      quantity,
+    }
+    return render(request, 'orders/checkout.html', context)
 
-            # --- Buat Order ---
-            order = Order.objects.create(
-                order_date=timezone.now(),
-                payment_status='Pending',
-                total_amount=total,
-                customer=customer,
-            )
-
-            # --- Buat Ticket(s) ---
-            tickets_created = []
-            for i in range(quantity):
-                code   = f'TKT-{uuid.uuid4().hex[:8].upper()}'
-                ticket = Ticket.objects.create(
-                    ticket_code=code,
-                    category=category,
-                    order=order,
-                )
-                tickets_created.append(ticket)
-
-            # --- Assign kursi (jika dipilih) ---
-            if seats:
-                for seat, ticket in zip(seats, tickets_created):
-                    HasRelationship.objects.create(seat=seat, ticket=ticket)
-
-            # --- Simpan promo ---
-            if promo_obj:
-                OrderPromotion.objects.create(promotion=promo_obj, order=order)
-
-            # --- Kurangi quota ---
-            category.quota -= quantity
-            category.save()
-
-            messages.success(request, f'Pesanan berhasil dibuat! Order ID: {order.order_id}')
-            return redirect('orders:order_list')
-
-    return render(request, 'orders/checkout.html', {
-        'event': event,
-        'form': form,
-    })
 
 @login_required
 def order_list(request):
+    """Halaman daftar order - data dummy untuk frontend."""
+
     user = request.user
+    role = getattr(user, 'role', 'customer')
 
-    # Ambil role user dari session/account
-    # Sesuaikan dengan cara app accounts menyimpan role
-    is_admin     = user.account_role.filter(role__role_name='Admin').exists()
-    is_organizer = user.account_role.filter(role__role_name='Organizer').exists()
-    is_customer  = user.account_role.filter(role__role_name='Customer').exists()
+    # Data dummy orders
+    all_orders = [
+        {
+            'order_id':       'ord_001',
+            'order_date':     '2024-04-10 14:32',
+            'payment_status': 'Paid',
+            'total_amount':   1200000,
+            'customer_name':  'Budi Santoso',
+            'customer_initial': 'B',
+        },
+        {
+            'order_id':       'ord_002',
+            'order_date':     '2024-04-11 09:15',
+            'payment_status': 'Paid',
+            'total_amount':   150000,
+            'customer_name':  'Budi Santoso',
+            'customer_initial': 'B',
+        },
+        {
+            'order_id':       'ord_003',
+            'order_date':     '2024-04-12 18:44',
+            'payment_status': 'Pending',
+            'total_amount':   1500000,
+            'customer_name':  'Siti Rahayu',
+            'customer_initial': 'S',
+        },
+        {
+            'order_id':       'ord_004',
+            'order_date':     '2024-04-13 11:00',
+            'payment_status': 'Cancelled',
+            'total_amount':   700000,
+            'customer_name':  'Siti Rahayu',
+            'customer_initial': 'S',
+        },
+    ]
 
-    # --- Filter data sesuai role ---
-    if is_admin:
-        orders = Order.objects.select_related('customer').all()
-
-    elif is_organizer:
-        # Organizer hanya melihat order dari eventnya sendiri
-        # Jalur: ORDER → TICKET → TICKET_CATEGORY → EVENT → ORGANIZER
-        try:
-            organizer = request.user.organizer  # relasi OneToOne dari accounts
-            orders = Order.objects.filter(
-                tickets__category__event__organizer=organizer
-            ).select_related('customer').distinct()
-        except Exception:
-            orders = Order.objects.none()
-
-    elif is_customer:
-        try:
-            customer = request.user.customer
-            orders = Order.objects.filter(
-                customer=customer
-            ).select_related('customer')
-        except Exception:
-            orders = Order.objects.none()
-
+    # Filter sesuai role
+    if role == 'customer':
+        # Customer hanya lihat miliknya sendiri (dummy: ambil 2 pertama)
+        orders = all_orders[:2]
     else:
-        orders = Order.objects.none()
+        # Admin & Organizer lihat semua
+        orders = all_orders
 
-    # --- Pencarian berdasarkan Order ID ---
-    search_query = request.GET.get('q', '').strip()
-    if search_query:
-        orders = orders.filter(
-            Q(order_id__icontains=search_query)
-        )
-
-    # --- Filter berdasarkan Payment Status ---
+    # Filter pencarian & status dari GET
+    search_query  = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '')
-    if status_filter:
-        orders = orders.filter(payment_status=status_filter)
 
-    # --- Statistik ringkasan ---
-    total_order   = orders.count()
-    total_paid    = orders.filter(payment_status='Paid').count()
-    total_pending = orders.filter(payment_status='Pending').count()
-    total_revenue = orders.filter(
-        payment_status='Paid'
-    ).aggregate(total=Sum('total_amount'))['total'] or 0
+    if search_query:
+        orders = [o for o in orders if search_query.lower() in o['order_id'].lower()]
+
+    if status_filter:
+        orders = [o for o in orders if o['payment_status'] == status_filter]
+
+    # Statistik ringkasan
+    total_order   = len(orders)
+    total_paid    = sum(1 for o in orders if o['payment_status'] == 'Paid')
+    total_pending = sum(1 for o in orders if o['payment_status'] == 'Pending')
+    total_revenue = sum(o['total_amount'] for o in orders if o['payment_status'] == 'Paid')
 
     context = {
         'orders':        orders,
-        'is_admin':      is_admin,
-        'is_organizer':  is_organizer,
-        'is_customer':   is_customer,
+        'role':          role,
+        'is_admin':      role == 'admin' or user.is_superuser,
+        'is_organizer':  role == 'organizer',
+        'is_customer':   role == 'customer',
         'search_query':  search_query,
         'status_filter': status_filter,
         'total_order':   total_order,
         'total_paid':    total_paid,
         'total_pending': total_pending,
         'total_revenue': total_revenue,
-        'status_choices': Order.STATUS_CHOICES,
+        'status_choices': [
+            ('Paid',      'Lunas'),
+            ('Pending',   'Pending'),
+            ('Cancelled', 'Dibatalkan'),
+        ],
     }
-
     return render(request, 'orders/order_list.html', context)
