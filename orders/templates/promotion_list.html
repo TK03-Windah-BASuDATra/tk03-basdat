@@ -1,0 +1,675 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Promosi{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f0f4f8; }
+
+  .page-subtitle { font-size: 0.85rem; color: #94a3b8; margin-top: 2px; }
+
+  /* Stat Cards */
+  .stat-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+    padding: 20px 24px;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+  }
+
+  /* Filter bar */
+  .filter-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+    padding: 16px 20px;
+  }
+  .search-input {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.65rem;
+    padding: 9px 14px 9px 36px;
+    font-size: 0.875rem;
+    color: #475569;
+    width: 100%;
+    background: #f8fafc;
+  }
+  .search-input:focus { outline: none; border-color: #6366f1; background: #fff; }
+  .search-wrapper { position: relative; }
+  .search-icon {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8; font-size: 0.85rem;
+  }
+  .type-select {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.65rem;
+    padding: 9px 36px 9px 14px;
+    font-size: 0.875rem;
+    color: #475569;
+    background: #f8fafc;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+  }
+  .type-select:focus { outline: none; border-color: #6366f1; }
+
+  /* Table */
+  .table-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+    overflow: hidden;
+  }
+  .promo-table { width: 100%; border-collapse: collapse; }
+  .promo-table thead tr { border-bottom: 1.5px solid #f1f5f9; }
+  .promo-table thead th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    text-align: left;
+    background: #fff;
+  }
+  .promo-table tbody tr {
+    border-bottom: 1px solid #f8fafc;
+    transition: background 0.1s;
+  }
+  .promo-table tbody tr:last-child { border-bottom: none; }
+  .promo-table tbody tr:hover { background: #fafbff; }
+  .promo-table td {
+    padding: 14px 20px;
+    font-size: 0.875rem;
+    color: #475569;
+    vertical-align: middle;
+  }
+
+  /* Promo code */
+  .promo-code-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .promo-icon {
+    width: 28px; height: 28px;
+    border-radius: 0.4rem;
+    background: #ede9fe;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .promo-icon i { font-size: 0.75rem; color: #7c3aed; }
+  .promo-code-text {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #1e293b;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* Type badge */
+  .type-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-percentage { background: #ede9fe; color: #7c3aed; }
+  .badge-nominal    { background: #fef3c7; color: #d97706; }
+
+  /* Usage */
+  .usage-text { font-size: 0.875rem; color: #475569; }
+
+  /* Action buttons */
+  .action-btn {
+    width: 30px; height: 30px;
+    border-radius: 0.4rem;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    color: #64748b;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .action-btn:hover { border-color: #6366f1; color: #6366f1; }
+  .action-btn.delete:hover { border-color: #ef4444; color: #ef4444; }
+  .action-btn i { font-size: 0.75rem; }
+
+  /* Buat Promo button */
+  .btn-create-promo {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 0.65rem;
+    padding: 9px 18px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-create-promo:hover { background: #4f46e5; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+  }
+  .empty-state h6 { color: #475569; font-weight: 600; margin-bottom: 4px; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.35);
+    z-index: 1040;
+  }
+  .modal-overlay.active { display: block; }
+
+  .modal-box {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(15,23,42,0.18);
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    z-index: 1050;
+  }
+  .modal-box.active { display: block; }
+
+  .modal-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .modal-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+  }
+  .modal-close {
+    background: none; border: none;
+    font-size: 1.3rem; color: #94a3b8;
+    cursor: pointer; line-height: 1; padding: 0;
+  }
+  .modal-close:hover { color: #475569; }
+
+  .modal-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal-label:first-of-type { margin-top: 0; }
+
+  .modal-input {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.65rem;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: #475569;
+    background: #f8fafc;
+  }
+  .modal-input:focus { outline: none; border-color: #6366f1; background: #fff; }
+  .modal-input::placeholder { color: #cbd5e1; }
+
+  .modal-select {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.65rem;
+    padding: 10px 36px 10px 14px;
+    font-size: 0.875rem;
+    color: #475569;
+    background: #f8fafc;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .modal-select:focus { outline: none; border-color: #6366f1; }
+
+  .modal-row-2 { display: flex; gap: 12px; }
+  .modal-row-2 > div { flex: 1; }
+
+  .modal-footer-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .modal-btn-cancel {
+    flex: 1; padding: 11px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 2rem;
+    background: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .modal-btn-cancel:hover { border-color: #94a3b8; }
+
+  .modal-btn-confirm {
+    flex: 1; padding: 11px;
+    border: none;
+    border-radius: 2rem;
+    background: #6366f1;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-btn-confirm:hover { background: #4f46e5; }
+  .modal-btn-confirm:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+  .modal-btn-danger {
+    flex: 1; padding: 11px;
+    border: none;
+    border-radius: 0.65rem;
+    background: #dc2626;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-btn-danger:hover { background: #b91c1c; }
+
+  .modal-body-text {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h4 class="fw-bold mb-0" style="color:#1e293b; letter-spacing:-0.02em;">
+        Manajemen Promosi
+      </h4>
+      <p class="page-subtitle">Kelola kode promo dan kampanye diskon.</p>
+    </div>
+    {% if is_admin %}
+      <button class="btn-create-promo" onclick="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> + Buat Promo
+      </button>
+    {% endif %}
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-label">Total Promo</div>
+        <div class="stat-value">{{ total_promo }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-label">Total Penggunaan</div>
+        <div class="stat-value">{{ total_usage }}x</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-label">Tipe Persentase</div>
+        <div class="stat-value">{{ total_percentage }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search -->
+  <div class="filter-card mb-3">
+    <form method="get" class="d-flex gap-3 align-items-center">
+      <div class="search-wrapper flex-grow-1">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text"
+               name="q"
+               class="search-input"
+               placeholder="Cari kode promo..."
+               value="{{ search_query }}">
+      </div>
+      <select name="type" class="type-select" onchange="this.form.submit()">
+        <option value="">Semua Tipe</option>
+        <option value="PERCENTAGE" {% if type_filter == 'PERCENTAGE' %}selected{% endif %}>
+          Persentase
+        </option>
+        <option value="NOMINAL" {% if type_filter == 'NOMINAL' %}selected{% endif %}>
+          Nominal
+        </option>
+      </select>
+    </form>
+  </div>
+
+  <!-- Tabel Promosi -->
+  <div class="table-card">
+    {% if promotions %}
+      <div class="table-responsive">
+        <table class="promo-table">
+          <thead>
+            <tr>
+              <th>Kode Promo</th>
+              <th>Tipe</th>
+              <th>Nilai Diskon</th>
+              <th>Mulai</th>
+              <th>Berakhir</th>
+              <th>Penggunaan</th>
+              {% if is_admin %}<th style="width:80px;"></th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for promo in promotions %}
+              <tr>
+                <!-- Kode Promo -->
+                <td>
+                  <div class="promo-code-cell">
+                    <div class="promo-icon">
+                      <i class="bi bi-tag"></i>
+                    </div>
+                    <span class="promo-code-text">{{ promo.promo_code }}</span>
+                  </div>
+                </td>
+
+                <!-- Tipe -->
+                <td>
+                  {% if promo.discount_type == 'PERCENTAGE' %}
+                    <span class="type-badge badge-percentage">PERSENTASE</span>
+                  {% else %}
+                    <span class="type-badge badge-nominal">NOMINAL</span>
+                  {% endif %}
+                </td>
+
+                <!-- Nilai Diskon -->
+                <td>
+                  {% if promo.discount_type == 'PERCENTAGE' %}
+                    {{ promo.discount_value|floatformat:0 }}%
+                  {% else %}
+                    Rp {{ promo.discount_value|floatformat:0 }}
+                  {% endif %}
+                </td>
+
+                <!-- Tanggal -->
+                <td><small>{{ promo.start_date }}</small></td>
+                <td><small>{{ promo.end_date }}</small></td>
+
+                <!-- Penggunaan -->
+                <td>
+                  <span class="usage-text">
+                    {{ promo.used_count }} / {{ promo.usage_limit }}
+                  </span>
+                </td>
+
+                <!-- Aksi (Admin) -->
+                {% if is_admin %}
+                  <td>
+                    <div class="d-flex gap-1">
+                      <button type="button"
+                              class="action-btn"
+                              title="Edit"
+                              onclick="openUpdateModal(
+                                '{{ promo.promotion_id }}',
+                                '{{ promo.promo_code }}',
+                                '{{ promo.discount_type }}',
+                                '{{ promo.discount_value }}',
+                                '{{ promo.start_date }}',
+                                '{{ promo.end_date }}',
+                                '{{ promo.usage_limit }}'
+                              )">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button type="button"
+                              class="action-btn delete"
+                              title="Hapus"
+                              onclick="openDeleteModal('{{ promo.promotion_id }}', '{{ promo.promo_code }}')">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-tag fs-1 d-block mb-3" style="color:#cbd5e1;"></i>
+        <h6>Belum ada promo</h6>
+        <p class="small mb-0">
+          {% if search_query or type_filter %}
+            Tidak ada promo yang cocok dengan filter.
+          {% else %}
+            Belum ada kode promo yang terdaftar.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% if is_admin %}
+
+<!-- ===== MODAL CREATE PROMO ===== -->
+<div class="modal-overlay" id="createOverlay" onclick="closeCreateModal()"></div>
+<div class="modal-box" id="createModal">
+  <div class="modal-header-row">
+    <span class="modal-title">Buat Promo Baru</span>
+    <button class="modal-close" onclick="closeCreateModal()">×</button>
+  </div>
+
+  <form method="post" action="{% url 'orders:promotion_create' %}">
+    {% csrf_token %}
+
+    <label class="modal-label">Kode Promo</label>
+    <input type="text" name="promo_code" class="modal-input"
+           placeholder="CTH.  TIKTAK20" required>
+
+    <label class="modal-label">Tipe Diskon</label>
+    <select name="discount_type" class="modal-select" required>
+      <option value="PERCENTAGE">Persentase (%)</option>
+      <option value="NOMINAL">Nominal (Rp)</option>
+    </select>
+
+    <label class="modal-label">Nilai Diskon</label>
+    <input type="number" name="discount_value" class="modal-input"
+           placeholder="cth. 20" min="1" step="any" required>
+
+    <div class="modal-row-2">
+      <div>
+        <label class="modal-label">Tanggal Mulai</label>
+        <input type="date" name="start_date" class="modal-input" required>
+      </div>
+      <div>
+        <label class="modal-label">Tanggal Berakhir</label>
+        <input type="date" name="end_date" class="modal-input" required>
+      </div>
+    </div>
+
+    <label class="modal-label">Batas Penggunaan</label>
+    <input type="number" name="usage_limit" class="modal-input"
+           value="1" min="1" required>
+
+    <div class="modal-footer-row">
+      <button type="button" class="modal-btn-cancel" onclick="closeCreateModal()">
+        Batal
+      </button>
+      <button type="submit" class="modal-btn-confirm">
+        Buat
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- ===== MODAL UPDATE PROMO ===== -->
+<div class="modal-overlay" id="updateOverlay" onclick="closeUpdateModal()"></div>
+<div class="modal-box" id="updateModal">
+  <div class="modal-header-row">
+    <span class="modal-title">Edit Promo</span>
+    <button class="modal-close" onclick="closeUpdateModal()">×</button>
+  </div>
+
+  <form method="post" id="updateForm" action="">
+    {% csrf_token %}
+
+    <label class="modal-label">Kode Promo</label>
+    <input type="text" name="promo_code" id="editPromoCode"
+           class="modal-input" required>
+
+    <label class="modal-label">Tipe Diskon</label>
+    <select name="discount_type" id="editDiscountType" class="modal-select" required>
+      <option value="PERCENTAGE">Persentase (%)</option>
+      <option value="NOMINAL">Nominal (Rp)</option>
+    </select>
+
+    <label class="modal-label">Nilai Diskon</label>
+    <input type="number" name="discount_value" id="editDiscountValue"
+           class="modal-input" min="1" step="any" required>
+
+    <div class="modal-row-2">
+      <div>
+        <label class="modal-label">Tanggal Mulai</label>
+        <input type="date" name="start_date" id="editStartDate"
+               class="modal-input" required>
+      </div>
+      <div>
+        <label class="modal-label">Tanggal Berakhir</label>
+        <input type="date" name="end_date" id="editEndDate"
+               class="modal-input" required>
+      </div>
+    </div>
+
+    <label class="modal-label">Batas Penggunaan</label>
+    <input type="number" name="usage_limit" id="editUsageLimit"
+           class="modal-input" min="1" required>
+
+    <div class="modal-footer-row">
+      <button type="button" class="modal-btn-cancel" onclick="closeUpdateModal()">
+        Batal
+      </button>
+      <button type="submit" class="modal-btn-confirm">
+        Simpan
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- ===== MODAL DELETE PROMO ===== -->
+<div class="modal-overlay" id="deleteOverlay" onclick="closeDeleteModal()"></div>
+<div class="modal-box" id="deleteModal">
+  <div class="modal-header-row">
+    <span class="modal-title" style="color:#dc2626;">Hapus Promo</span>
+    <button class="modal-close" onclick="closeDeleteModal()">×</button>
+  </div>
+
+  <p class="modal-body-text">
+    Apakah Anda yakin ingin menghapus kode promo ini?
+    <br>Tindakan ini tidak dapat dibatalkan.
+  </p>
+
+  <form method="post" id="deleteForm" action="">
+    {% csrf_token %}
+    <input type="hidden" name="confirm_delete" value="1">
+
+    <div class="modal-footer-row">
+      <button type="button" class="modal-btn-cancel" onclick="closeDeleteModal()">
+        Batal
+      </button>
+      <button type="submit" class="modal-btn-danger">
+        Hapus
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ===== CREATE MODAL =====
+  function openCreateModal() {
+    document.getElementById('createOverlay').classList.add('active');
+    document.getElementById('createModal').classList.add('active');
+  }
+  function closeCreateModal() {
+    document.getElementById('createOverlay').classList.remove('active');
+    document.getElementById('createModal').classList.remove('active');
+  }
+
+  // ===== UPDATE MODAL =====
+  function openUpdateModal(id, code, type, value, start, end, limit) {
+    document.getElementById('updateForm').action =
+      '/orders/promosi/update/' + id + '/';
+
+    document.getElementById('editPromoCode').value     = code;
+    document.getElementById('editDiscountType').value  = type;
+    document.getElementById('editDiscountValue').value = value;
+    document.getElementById('editStartDate').value     = start;
+    document.getElementById('editEndDate').value       = end;
+    document.getElementById('editUsageLimit').value    = limit;
+
+    document.getElementById('updateOverlay').classList.add('active');
+    document.getElementById('updateModal').classList.add('active');
+  }
+  function closeUpdateModal() {
+    document.getElementById('updateOverlay').classList.remove('active');
+    document.getElementById('updateModal').classList.remove('active');
+  }
+
+  // ===== DELETE MODAL =====
+  function openDeleteModal(id, code) {
+    document.getElementById('deleteForm').action =
+      '/orders/promosi/delete/' + id + '/';
+    document.getElementById('deleteOverlay').classList.add('active');
+    document.getElementById('deleteModal').classList.add('active');
+  }
+  function closeDeleteModal() {
+    document.getElementById('deleteOverlay').classList.remove('active');
+    document.getElementById('deleteModal').classList.remove('active');
+  }
+</script>
+{% endblock %}
