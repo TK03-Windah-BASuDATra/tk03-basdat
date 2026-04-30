@@ -476,23 +476,35 @@ def order_delete(request, order_id):
     if request.method == "POST":
         if "confirm_delete" in request.POST:
             with connection.cursor() as cur:
+                # 1. Hapus has_relationship (referensi ke ticket)
                 cur.execute(
                     """
-                    DELETE FROM windah_basudatra."order"
-                    WHERE order_id = %s
+                    DELETE FROM windah_basudatra.has_relationship
+                    WHERE ticket_id IN (
+                        SELECT ticket_id FROM windah_basudatra.ticket
+                        WHERE order_id = %s
+                    )
                     """,
+                    [str(order_id)],
+                )
+                # 2. Hapus order_promotion (referensi ke order)
+                cur.execute(
+                    "DELETE FROM windah_basudatra.order_promotion WHERE order_id = %s",
+                    [str(order_id)],
+                )
+                # 3. Hapus ticket
+                cur.execute(
+                    "DELETE FROM windah_basudatra.ticket WHERE order_id = %s",
+                    [str(order_id)],
+                )
+                # 4. Hapus order
+                cur.execute(
+                    'DELETE FROM windah_basudatra."order" WHERE order_id = %s',
                     [str(order_id)],
                 )
             messages.success(request, "Order berhasil dihapus.")
 
         return redirect(_build_url("orders:semua_order", role, username))
-
-    context = {
-        "order": order,
-        "role": role,
-        "username": username,
-    }
-    return render(request, "order_delete.html", context)
 
 
 def promotion_create(request):
