@@ -83,7 +83,7 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Tiket Saya</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Tiket Saya</a></li>
               <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Pesanan</a></li>
             </ul>
           </li>
