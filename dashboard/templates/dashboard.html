@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TikTakTuk{% endblock %}
+
+{% block content %}
+  {% if role == "admin" %}
+    {% include "dashboard-admin.html" %}
+  {% elif role == "organizer" %}
+    {% include "dashboard-organizer.html" %}
+  {% elif role == "customer" %}
+    {% include "dashboard-customer.html" %}
+  {% else %}
+    {% include "dashboard-guest.html" %}
+  {% endif %}
+{% endblock %}

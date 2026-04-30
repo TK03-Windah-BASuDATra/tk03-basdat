@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Saya{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-7">
+
+<div class="mb-4">
+  <h4 class="fw-800 mb-1">Profil Saya</h4>
+  <div class="text-muted small">Kelola informasi pribadi dan preferensi akun Anda</div>
+</div>
+
+<!-- INFORMASI PROFIL -->
+<div class="card card-soft p-4 mb-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <div class="fw-bold">Informasi Profil</div>
+      <div class="text-muted small">Kelola data pribadi Anda di platform TikTakTuk</div>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="toggleEdit()">
+      ✏ Edit
+    </button>
+  </div>
+
+<!-- AVATAR -->
+<div class="mb-3">
+  <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-4"
+       style="width:64px;height:64px;background:linear-gradient(135deg,#3b82f6,#6366f1)">
+    {{ display_name|first|upper }}
+  </div>
+</div>
+
+<hr>
+
+<!-- ROLE -->
+<div class="mb-3">
+  <div class="text-muted small mb-1">Role / Peran</div>
+  <span class="badge rounded-pill px-3 py-2 fw-semibold"
+        style="background:#eff6ff;color:#3b82f6;font-size:13px">
+    {{ role|title }}
+  </span>
+</div>
+
+<!-- VIEW MODE -->
+<div id="viewMode">
+  <div class="row g-3">
+    {% if role == 'customer' %}
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">👤 Nama Lengkap</div>
+        <div class="fw-semibold">{{ full_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">📞 Nomor Telepon</div>
+        <div class="fw-semibold">{{ phone_number }}</div>
+      </div>
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">👤 Username</div>
+        <div class="fw-semibold">@{{ username }}</div>
+      </div>
+    {% elif role == 'organizer' %}
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">🏢 Nama Organizer</div>
+        <div class="fw-semibold">{{ organizer_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">✉ Contact Email</div>
+        <div class="fw-semibold">{{ contact_email }}</div>
+      </div>
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">👤 Username</div>
+        <div class="fw-semibold">@{{ username }}</div>
+      </div>
+    {% else %}
+      <div class="col-md-6">
+        <div class="text-muted small mb-1">👤 Username</div>
+        <div class="fw-semibold">@{{ username }}</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+  <!-- EDIT MODE -->
+  <div id="editMode" style="display:none">
+    <form method="POST" action="{% url 'profile_update' %}?role={{ role }}">
+      {% csrf_token %}
+      <div class="row g-3">
+        {% if role == 'customer' %}
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Nama Lengkap</label>
+          <input type="text" name="full_name" class="form-control rounded-3" value="{{ full_name }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Nomor Telepon</label>
+          <input type="text" name="phone_number" class="form-control rounded-3" value="{{ phone_number }}">
+        </div>
+        {% elif role == 'organizer' %}
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Nama Organisasi</label>
+          <input type="text" name="organizer_name" class="form-control rounded-3" value="{{ organizer_name }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Email Kontak</label>
+          <input type="email" name="contact_email" class="form-control rounded-3" value="{{ contact_email }}">
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="toggleEdit()">Batal</button>
+        <button type="submit" class="btn btn-dark rounded-pill px-4 fw-semibold">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- UPDATE PASSWORD -->
+<div class="card card-soft p-4">
+  <div class="mb-3">
+    <div class="fw-bold">🔒 Update Password</div>
+    <div class="text-muted small">Perbarui password Anda untuk menjaga keamanan akun</div>
+  </div>
+  <form method="POST" action="{% url 'profile_password' %}?role={{ role }}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Password Lama</label>
+      <input type="password" name="old_password" class="form-control rounded-3" placeholder="Password Lama">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Password Baru</label>
+      <input type="password" name="new_password" class="form-control rounded-3" placeholder="Password Baru">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Konfirmasi Password Baru</label>
+      <input type="password" name="confirm_password" class="form-control rounded-3" placeholder="Konfirmasi Password Baru">
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <button type="reset" class="btn btn-outline-secondary rounded-pill px-4">Cancel</button>
+      <button type="submit" class="btn btn-dark rounded-pill px-4 fw-semibold">Update Password</button>
+    </div>
+  </form>
+</div>
+
+</div>
+</div>
+
+<script>
+function toggleEdit() {
+  const view = document.getElementById('viewMode');
+  const edit = document.getElementById('editMode');
+  view.style.display = view.style.display === 'none' ? '' : 'none';
+  edit.style.display = edit.style.display === 'none' ? '' : 'none';
+}
+</script>
+{% endblock %}
