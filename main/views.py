@@ -265,7 +265,7 @@ def dashboard_guest(request):
 
 
 def _render_placeholder(request, title, description):
-    return render(request, "placeholder_page.html", {
+    return _render_placeholder(request, "placeholder_page.html", {
         "page_title": title,
         "page_description": description,
     })

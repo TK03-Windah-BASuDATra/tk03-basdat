@@ -479,3 +479,23 @@ def event_update(request, pk):
         "formset": formset,
         "title": "Edit Event",
     })
+
+def event_delete(request, pk):
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa menghapus event.")
+        return redirect(_with_role("events:event_manage_list", role))
+
+    event = _find_event(pk)
+    if not event:
+        messages.error(request, "Event tidak ditemukan.")
+        return redirect(_with_role("events:event_manage_list", role))
+
+    if request.method == "POST":
+        messages.success(request, "Event berhasil dihapus.")
+        return redirect(_with_role("events:event_manage_list", role))
+
+    return render(request, "event_confirm_delete.html", {
+        "event": event,
+    })

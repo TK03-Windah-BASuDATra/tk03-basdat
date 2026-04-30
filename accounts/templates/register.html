@@ -34,7 +34,7 @@
         <div class="card auth-card">
           <div class="card-body p-4 p-md-5">
             <div class="mb-4">
-              <a href="{% url 'pilih_role' %}?role=guest" class="text-decoration-none small">&larr; Kembali</a>
+              <a href="{% url 'accounts:pilih_role' %}?role=guest" class="text-decoration-none small">&larr; Kembali</a>
 
               <div class="mt-3 mb-2">
                 <span class="role-pill">
@@ -132,7 +132,7 @@
 
             <p class="text-center text-muted mt-4 mb-0">
               Sudah punya akun?
-              <a href="{% url 'login' %}?role=guest" class="fw-semibold text-decoration-none">Login di sini</a>
+              <a href="{% url 'accounts:login' %}?role=guest" class="fw-semibold text-decoration-none">Login di sini</a>
             </p>
           </div>
         </div>

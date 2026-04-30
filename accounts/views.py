@@ -28,7 +28,7 @@ def login_view(request):
         password = request.POST.get("password", "").strip()
 
         if username and password:
-            messages.success(request, f"Simulasi login berhasil sebagai {role}.")
+            messages.success(request, f"Login berhasil sebagai {role}.")
             return redirect(f"{reverse('dashboard')}?role={role}")
 
         messages.error(request, "Username dan password harus diisi.")
@@ -57,7 +57,7 @@ def register_view(request, role):
 
     if role not in ["organizer", "customer"]:
         messages.error(request, "Role tidak valid.")
-        return redirect("pilih_role")
+        return redirect("accounts:pilih_role")
 
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -75,8 +75,8 @@ def register_view(request, role):
 
 
 def logout_view(request):
-    messages.success(request, "Simulasi logout berhasil.")
-    return redirect(f"{reverse('login')}?role=guest")
+    messages.success(request, "Logout berhasil.")
+    return redirect(f"{reverse('accounts:login')}?role=guest")
 
 # PROFILE VIEW
 

@@ -17,10 +17,10 @@
 
         {% if role == "guest" %}
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'login' %}?role=guest">Login</a>
+            <a class="nav-link link-primary" href="{% url 'accounts:login' %}?role=guest">Login</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'pilih_role' %}?role=guest">Registrasi</a>
+            <a class="nav-link link-primary" href="{% url 'accounts:pilih_role' %}?role=guest">Registrasi</a>
           </li>
 
         {% elif role == "admin" %}
@@ -46,8 +46,8 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Semua Order</a></li>
-              <li><a class="dropdown-item" href="{% url 'order_aset' %}?role={{ role }}">Order(Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Semua Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Order (Aset)</a></li>
             </ul>
           </li>
 
@@ -66,7 +66,7 @@
               <li><a class="dropdown-item" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
               <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Order</a></li>
               <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
             </ul>
           </li>
@@ -79,8 +79,8 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'tickets:tiket_saya' %}?role={{ role }}">Tiket Saya</a></li>
-              <li><a class="dropdown-item" href="{% url 'pesanan' %}?role={{ role }}">Pesanan</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Tiket Saya</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Pesanan</a></li>
             </ul>
           </li>
 
@@ -99,8 +99,8 @@
       <div class="d-flex align-items-center gap-2">
         {% if role and role != "guest" %}
           <span class="text-muted small">Hi, {{ role|title }}</span>
-          <a href="{% url 'profile' %}?role={{ role }}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
-          <a href="{% url 'logout' %}?role=guest" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
+          <a href="{% url 'accounts:profile' %}?role={{ role }}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
+          <a href="{% url 'accounts:logout' %}?role=guest" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
         {% endif %}
       </div>
     </div>
