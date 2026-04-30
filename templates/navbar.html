@@ -46,8 +46,8 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Semua Order</a></li>
-              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Order (Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Semua Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Order (Aset)</a></li>
             </ul>
           </li>
 

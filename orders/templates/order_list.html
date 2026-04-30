@@ -5,128 +5,62 @@
 {% block extra_css %}
 <style>
   body { background: #f0f4f8; }
-
   .page-subtitle { font-size: 0.85rem; color: #94a3b8; margin-top: 2px; }
-
-  /* Stat Cards */
   .stat-card {
-    background: #fff;
-    border-radius: 1rem;
+    background: #fff; border-radius: 1rem;
     box-shadow: 0 2px 12px rgba(15,23,42,0.07);
-    padding: 20px 24px;
-    border: none;
+    padding: 20px 24px; border: none;
   }
   .stat-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: #94a3b8;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em;
+    color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;
   }
-  .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1e293b;
-    line-height: 1;
-  }
-  .stat-value.revenue {
-    font-size: 1.3rem;
-  }
-
-  /* Filter bar */
+  .stat-value { font-size: 1.75rem; font-weight: 700; color: #1e293b; line-height: 1; }
+  .stat-value.revenue { font-size: 1.3rem; }
   .filter-card {
-    background: #fff;
-    border-radius: 1rem;
-    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
-    padding: 16px 20px;
+    background: #fff; border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07); padding: 16px 20px;
   }
   .search-input {
-    border: 1.5px solid #e2e8f0;
-    border-radius: 0.65rem;
-    padding: 9px 14px 9px 36px;
-    font-size: 0.875rem;
-    color: #475569;
-    width: 100%;
-    background: #f8fafc;
+    border: 1.5px solid #e2e8f0; border-radius: 0.65rem;
+    padding: 9px 14px 9px 36px; font-size: 0.875rem;
+    color: #475569; width: 100%; background: #f8fafc;
   }
   .search-input:focus { outline: none; border-color: #6366f1; background: #fff; }
   .search-wrapper { position: relative; }
   .search-icon {
-    position: absolute;
-    left: 12px; top: 50%;
-    transform: translateY(-50%);
-    color: #94a3b8;
-    font-size: 0.85rem;
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;
   }
   .status-select {
-    border: 1.5px solid #e2e8f0;
-    border-radius: 0.65rem;
-    padding: 9px 36px 9px 14px;
-    font-size: 0.875rem;
-    color: #475569;
-    background: #f8fafc;
-    appearance: none;
-    -webkit-appearance: none;
+    border: 1.5px solid #e2e8f0; border-radius: 0.65rem;
+    padding: 9px 36px 9px 14px; font-size: 0.875rem;
+    color: #475569; background: #f8fafc;
+    appearance: none; -webkit-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    cursor: pointer;
+    background-repeat: no-repeat; background-position: right 12px center; cursor: pointer;
   }
   .status-select:focus { outline: none; border-color: #6366f1; }
-
-  /* Table card */
   .table-card {
-    background: #fff;
-    border-radius: 1rem;
-    box-shadow: 0 2px 12px rgba(15,23,42,0.07);
-    overflow: hidden;
+    background: #fff; border-radius: 1rem;
+    box-shadow: 0 2px 12px rgba(15,23,42,0.07); overflow: hidden;
   }
   .order-table { width: 100%; border-collapse: collapse; }
-  .order-table thead tr {
-    border-bottom: 1.5px solid #f1f5f9;
-  }
+  .order-table thead tr { border-bottom: 1.5px solid #f1f5f9; }
   .order-table thead th {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    color: #94a3b8;
-    text-transform: uppercase;
-    padding: 14px 20px;
-    text-align: left;
-    background: #fff;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em;
+    color: #94a3b8; text-transform: uppercase;
+    padding: 14px 20px; text-align: left; background: #fff;
   }
-  .order-table tbody tr {
-    border-bottom: 1px solid #f8fafc;
-    transition: background 0.1s;
-  }
+  .order-table tbody tr { border-bottom: 1px solid #f8fafc; transition: background 0.1s; }
   .order-table tbody tr:last-child { border-bottom: none; }
   .order-table tbody tr:hover { background: #fafbff; }
-  .order-table td {
-    padding: 14px 20px;
-    font-size: 0.875rem;
-    color: #475569;
-    vertical-align: middle;
-  }
-
-  /* Order ID */
-  .order-id {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    color: #64748b;
-  }
-
-  /* Avatar pelanggan */
+  .order-table td { padding: 14px 20px; font-size: 0.875rem; color: #475569; vertical-align: middle; }
+  .order-id { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #64748b; }
   .customer-avatar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 700;
-    margin-right: 8px;
-    flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; margin-right: 8px; flex-shrink: 0;
   }
   .avatar-blue   { background: #dbeafe; color: #2563eb; }
   .avatar-purple { background: #ede9fe; color: #7c3aed; }
@@ -134,65 +68,96 @@
   .avatar-orange { background: #ffedd5; color: #ea580c; }
   .customer-cell { display: flex; align-items: center; }
   .customer-name { font-weight: 500; color: #1e293b; font-size: 0.875rem; }
-
-  /* Status badge */
   .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em;
   }
   .badge-paid      { background: #f0fdf4; color: #16a34a; }
   .badge-pending   { background: #fffbeb; color: #d97706; }
   .badge-failed    { background: #fef2f2; color: #dc2626; }
   .badge-cancelled { background: #fef2f2; color: #dc2626; }
-  .badge-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    display: inline-block;
-  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
   .dot-paid      { background: #16a34a; }
   .dot-pending   { background: #d97706; }
   .dot-failed    { background: #dc2626; }
   .dot-cancelled { background: #dc2626; }
-
-  /* Total amount */
-  .total-amount {
-    font-weight: 700;
-    color: #1e293b;
-    font-size: 0.9rem;
-    text-align: right;
-  }
-
-  /* Aksi (admin) */
+  .total-amount { font-weight: 700; color: #1e293b; font-size: 0.9rem; text-align: right; }
   .action-btn {
-    width: 30px; height: 30px;
-    border-radius: 0.4rem;
-    border: 1.5px solid #e2e8f0;
-    background: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #64748b;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-    text-decoration: none;
+    width: 30px; height: 30px; border-radius: 0.4rem;
+    border: 1.5px solid #e2e8f0; background: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #64748b; cursor: pointer; transition: border-color 0.15s, color 0.15s;
   }
   .action-btn:hover { border-color: #6366f1; color: #6366f1; }
   .action-btn.delete:hover { border-color: #ef4444; color: #ef4444; }
   .action-btn i { font-size: 0.75rem; }
-
-  /* Empty state */
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #94a3b8;
-  }
+  .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
   .empty-state h6 { color: #475569; font-weight: 600; margin-bottom: 4px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(15,23,42,0.35); z-index: 1040;
+  }
+  .modal-overlay.active { display: block; }
+  .modal-box {
+    display: none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff; border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(15,23,42,0.18);
+    padding: 28px 28px 24px; width: 100%; max-width: 380px; z-index: 1050;
+  }
+  .modal-box.active { display: block; }
+  .modal-header-row {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 16px;
+  }
+  .modal-title { font-weight: 700; font-size: 1rem; color: #1e293b; }
+  .modal-close {
+    background: none; border: none; font-size: 1.3rem;
+    color: #94a3b8; cursor: pointer; line-height: 1; padding: 0;
+  }
+  .modal-close:hover { color: #475569; }
+  .modal-order-id {
+    font-size: 0.8rem; font-family: 'Courier New', monospace;
+    color: #64748b; margin-bottom: 14px;
+  }
+  .modal-label {
+    display: block; font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.06em; color: #94a3b8;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .modal-select {
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 0.65rem;
+    padding: 10px 36px 10px 14px; font-size: 0.875rem;
+    color: #475569; background: #f8fafc;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    margin-bottom: 20px;
+  }
+  .modal-select:focus { outline: none; border-color: #6366f1; }
+  .modal-body-text { font-size: 0.875rem; color: #475569; line-height: 1.6; margin-bottom: 24px; }
+  .modal-footer-row { display: flex; gap: 10px; }
+  .modal-btn-cancel {
+    flex: 1; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 0.65rem;
+    background: #fff; font-size: 0.875rem; font-weight: 500;
+    color: #475569; cursor: pointer; transition: border-color 0.15s;
+  }
+  .modal-btn-cancel:hover { border-color: #94a3b8; }
+  .modal-btn-confirm {
+    flex: 1; padding: 10px; border: none; border-radius: 0.65rem;
+    background: #6366f1; font-size: 0.875rem; font-weight: 600;
+    color: #fff; cursor: pointer; transition: background 0.15s;
+  }
+  .modal-btn-confirm:hover { background: #4f46e5; }
+  .modal-btn-danger {
+    flex: 1; padding: 10px; border: none; border-radius: 0.65rem;
+    background: #dc2626; font-size: 0.875rem; font-weight: 600;
+    color: #fff; cursor: pointer; transition: background 0.15s;
+  }
+  .modal-btn-danger:hover { background: #b91c1c; }
 </style>
 {% endblock %}
 
@@ -203,9 +168,9 @@
   <div class="mb-4">
     <h4 class="fw-bold mb-0" style="color:#1e293b; letter-spacing:-0.02em;">Daftar Order</h4>
     <p class="page-subtitle">
-      {% if is_customer %}
+      {% if role == 'customer' %}
         Riwayat pembelian tiket Anda.
-      {% elif is_organizer %}
+      {% elif role == 'organizer' %}
         Order dari event yang Anda selenggarakan.
       {% else %}
         Semua order yang terdaftar pada sistem.
@@ -215,49 +180,50 @@
 
   <!-- Stat Cards -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <!-- 3 kolom untuk customer, 4 kolom untuk admin/organizer -->
+    <div class="col-6 {% if role == 'admin' or role == 'organizer' %}col-md-3{% else %}col-md-4{% endif %}">
       <div class="stat-card">
         <div class="stat-label">Total Order</div>
         <div class="stat-value">{{ total_order }}</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 {% if role == 'admin' or role == 'organizer' %}col-md-3{% else %}col-md-4{% endif %}">
       <div class="stat-card">
         <div class="stat-label">Lunas</div>
         <div class="stat-value">{{ total_paid }}</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 {% if role == 'admin' or role == 'organizer' %}col-md-3{% else %}col-md-4{% endif %}">
       <div class="stat-card">
         <div class="stat-label">Pending</div>
         <div class="stat-value">{{ total_pending }}</div>
       </div>
     </div>
-    {% if is_admin or is_organizer %}
-    <div class="col-6 col-md-3">
-      <div class="stat-card">
-        <div class="stat-label">Total Revenue</div>
-        <div class="stat-value revenue">
-          Rp {{ total_revenue|floatformat:0 }}
+    {% if role == 'admin' or role == 'organizer' %}
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value revenue">Rp {{ total_revenue|floatformat:0 }}</div>
         </div>
       </div>
-    </div>
     {% endif %}
   </div>
 
   <!-- Filter & Search -->
   <div class="filter-card mb-3">
     <form method="get" class="d-flex gap-3 align-items-center">
-      <!-- Search -->
+      <!-- Preserve role di setiap request -->
+      <input type="hidden" name="role" value="{{ role }}">
+
       <div class="search-wrapper flex-grow-1">
         <i class="bi bi-search search-icon"></i>
         <input type="text"
                name="q"
                class="search-input"
-               placeholder="{% if is_customer %}Cari order ID...{% else %}Cari ID atau pelanggan...{% endif %}"
+               placeholder="{% if role == 'customer' %}Cari order ID...{% else %}Cari ID atau pelanggan...{% endif %}"
                value="{{ search_query }}">
       </div>
-      <!-- Status Filter -->
+
       <select name="status" class="status-select" onchange="this.form.submit()">
         <option value="">Semua Status</option>
         {% for value, label in status_choices %}
@@ -269,7 +235,7 @@
     </form>
   </div>
 
-  <!-- Tabel Order -->
+  <!-- Tabel -->
   <div class="table-card">
     {% if orders %}
       <div class="table-responsive">
@@ -277,13 +243,13 @@
           <thead>
             <tr>
               <th>Order ID</th>
-              {% if is_organizer or is_admin %}
+              {% if role == 'organizer' or role == 'admin' %}
                 <th>Pelanggan</th>
               {% endif %}
               <th>Tanggal</th>
               <th>Status</th>
               <th style="text-align:right;">Total</th>
-              {% if is_admin %}
+              {% if role == 'admin' %}
                 <th style="text-align:center; width:80px;"></th>
               {% endif %}
             </tr>
@@ -291,86 +257,81 @@
           <tbody>
             {% for order in orders %}
               <tr>
-
-                <!-- Order ID -->
                 <td>
                   <span class="order-id">
-                    {{ order.order_id|stringformat:"s"|slice:":8" }}...
+                    {{ order.order_id|stringformat:"s"|slice:":8" }}…
                   </span>
                 </td>
 
-                <!-- Pelanggan (Organizer & Admin) -->
-                {% if is_organizer or is_admin %}
+                {% if role == 'organizer' or role == 'admin' %}
                   <td>
                     <div class="customer-cell">
-                      <span class="customer-avatar
-                        {% with initial=order.customer_name|slice:":1"|upper %}
+                      {% with initial=order.customer_name|slice:":1"|upper %}
+                        <span class="customer-avatar
                           {% if initial == 'A' or initial == 'B' %}avatar-blue
                           {% elif initial == 'C' or initial == 'D' %}avatar-purple
                           {% elif initial == 'E' or initial == 'F' %}avatar-green
-                          {% else %}avatar-orange{% endif %}
-                        {% endwith %}">
-                        {{ order.customer_name|slice:":1"|upper }}
-                      </span>
+                          {% else %}avatar-orange{% endif %}">
+                          {{ initial }}
+                        </span>
+                      {% endwith %}
                       <span class="customer-name">{{ order.customer_name }}</span>
                     </div>
                   </td>
                 {% endif %}
 
-                <!-- Tanggal -->
-                <td>
-                  <small style="color:#64748b;">{{ order.order_date }}</small>
-                </td>
+                <td><small style="color:#64748b;">{{ order.order_date }}</small></td>
 
-                <!-- Status -->
                 <td>
                   {% if order.payment_status == 'PAID' %}
                     <span class="status-badge badge-paid">
-                      <span class="badge-dot dot-paid"></span>
-                      LUNAS
+                      <span class="badge-dot dot-paid"></span>LUNAS
                     </span>
                   {% elif order.payment_status == 'PENDING' %}
                     <span class="status-badge badge-pending">
-                      <span class="badge-dot dot-pending"></span>
-                      PENDING
+                      <span class="badge-dot dot-pending"></span>PENDING
                     </span>
                   {% elif order.payment_status == 'FAILED' %}
                     <span class="status-badge badge-failed">
-                      <span class="badge-dot dot-failed"></span>
-                      GAGAL
+                      <span class="badge-dot dot-failed"></span>GAGAL
                     </span>
                   {% else %}
                     <span class="status-badge badge-cancelled">
-                      <span class="badge-dot dot-cancelled"></span>
-                      {{ order.payment_status }}
+                      <span class="badge-dot dot-cancelled"></span>{{ order.payment_status }}
                     </span>
                   {% endif %}
                 </td>
 
-                <!-- Total -->
-                <td class="total-amount">
-                  Rp {{ order.total_amount|floatformat:0 }}
-                </td>
+                <td class="total-amount">Rp {{ order.total_amount|floatformat:0 }}</td>
 
-                <!-- Aksi (Admin only) -->
-                {% if is_admin %}
-                  <td style="text-align:center;">
-                    <div class="d-flex justify-content-center gap-1">
-                      <!-- Tombol Update → buka modal update -->
-                      <button type="button"
-                              class="action-btn"
-                              title="Update"
-                              onclick="openUpdateModal('{{ order.order_id }}', '{{ order.payment_status }}')">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <!-- Tombol Delete → buka modal delete -->
-                      <button type="button"
-                              class="action-btn delete"
-                              title="Delete"
-                              onclick="openDeleteModal('{{ order.order_id }}')">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
+                {% if role == 'admin' %}
+                  <td style="text-align:center; white-space:nowrap;">
+                    <button type="button"
+                            style="
+                              width:30px; height:30px; border-radius:6px;
+                              border:1.5px solid #e2e8f0; background:#fff;
+                              display:inline-flex; align-items:center; justify-content:center;
+                              color:#64748b; cursor:pointer; margin-right:4px;
+                            "
+                            onmouseover="this.style.borderColor='#6366f1'; this.style.color='#6366f1';"
+                            onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';"
+                            onclick="openUpdateModal('{{ order.order_id }}', '{{ order.payment_status }}')"
+                            title="Update">
+                      <i class="bi bi-pencil-fill" style="font-size:0.7rem;"></i>
+                    </button>
+                    <button type="button"
+                            style="
+                              width:30px; height:30px; border-radius:6px;
+                              border:1.5px solid #e2e8f0; background:#fff;
+                              display:inline-flex; align-items:center; justify-content:center;
+                              color:#64748b; cursor:pointer;
+                            "
+                            onmouseover="this.style.borderColor='#ef4444'; this.style.color='#ef4444';"
+                            onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#64748b';"
+                            onclick="openDeleteModal('{{ order.order_id }}')"
+                            title="Hapus">
+                      <i class="bi bi-trash-fill" style="font-size:0.7rem;"></i>
+                    </button>
                   </td>
                 {% endif %}
 
@@ -397,241 +358,73 @@
 
 </div>
 
-{% if is_admin %}
+{% if role == 'admin' %}
 
-<!-- ===== MODAL UPDATE ORDER ===== -->
+<!-- MODAL UPDATE -->
 <div class="modal-overlay" id="updateOverlay" onclick="closeUpdateModal()"></div>
 <div class="modal-box" id="updateModal">
   <div class="modal-header-row">
     <span class="modal-title">Update Status Order</span>
     <button class="modal-close" onclick="closeUpdateModal()">×</button>
   </div>
-
   <form method="post" id="updateForm" action="">
     {% csrf_token %}
-    <input type="hidden" name="action" value="update">
-
     <p class="modal-order-id" id="updateOrderId"></p>
-
-    <label class="modal-label">PAYMENT STATUS</label>
+    <label class="modal-label">Payment Status</label>
     <select name="payment_status" id="updateStatusSelect" class="modal-select">
       <option value="PAID">Lunas</option>
       <option value="PENDING">Pending</option>
       <option value="FAILED">Gagal</option>
     </select>
-
     <div class="modal-footer-row">
-      <button type="button" class="modal-btn-cancel" onclick="closeUpdateModal()">
-        Batal
-      </button>
-      <button type="submit" class="modal-btn-confirm">
-        Update
-      </button>
+      <button type="button" class="modal-btn-cancel" onclick="closeUpdateModal()">Batal</button>
+      <button type="submit" class="modal-btn-confirm">Update</button>
     </div>
   </form>
 </div>
 
-<!-- ===== MODAL DELETE ORDER ===== -->
+<!-- MODAL DELETE -->
 <div class="modal-overlay" id="deleteOverlay" onclick="closeDeleteModal()"></div>
 <div class="modal-box" id="deleteModal">
   <div class="modal-header-row">
     <span class="modal-title" style="color:#dc2626;">Hapus Order</span>
     <button class="modal-close" onclick="closeDeleteModal()">×</button>
   </div>
-
   <p class="modal-body-text">
-    Apakah Anda yakin ingin menghapus catatan order ini?
-    <br>Tindakan ini tidak dapat dibatalkan.
+    Apakah Anda yakin ingin menghapus catatan order ini?<br>
+    Tindakan ini tidak dapat dibatalkan.
   </p>
-
   <form method="post" id="deleteForm" action="">
     {% csrf_token %}
-    <input type="hidden" name="action" value="delete">
     <input type="hidden" name="confirm_delete" value="1">
-
     <div class="modal-footer-row">
-      <button type="button" class="modal-btn-cancel" onclick="closeDeleteModal()">
-        Batal
-      </button>
-      <button type="submit" class="modal-btn-danger">
-        Hapus
-      </button>
+      <button type="button" class="modal-btn-cancel" onclick="closeDeleteModal()">Batal</button>
+      <button type="submit" class="modal-btn-danger">Hapus</button>
     </div>
   </form>
 </div>
 
 {% endif %}
-
-{% endblock %}
-
-{% block extra_css %}
-{{ block.super }}
-<style>
-  /* Modal Overlay */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(15,23,42,0.35);
-    z-index: 1040;
-  }
-  .modal-overlay.active { display: block; }
-
-  /* Modal Box */
-  .modal-box {
-    display: none;
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: #fff;
-    border-radius: 1rem;
-    box-shadow: 0 20px 60px rgba(15,23,42,0.18);
-    padding: 28px 28px 24px;
-    width: 100%;
-    max-width: 380px;
-    z-index: 1050;
-  }
-  .modal-box.active { display: block; }
-
-  /* Modal Header */
-  .modal-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .modal-title {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #1e293b;
-  }
-  .modal-close {
-    background: none;
-    border: none;
-    font-size: 1.3rem;
-    color: #94a3b8;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-  }
-  .modal-close:hover { color: #475569; }
-
-  /* Modal Content */
-  .modal-order-id {
-    font-size: 0.8rem;
-    font-family: 'Courier New', monospace;
-    color: #64748b;
-    margin-bottom: 14px;
-  }
-  .modal-label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: #94a3b8;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .modal-select {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 0.65rem;
-    padding: 10px 36px 10px 14px;
-    font-size: 0.875rem;
-    color: #475569;
-    background: #f8fafc;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    margin-bottom: 20px;
-  }
-  .modal-select:focus { outline: none; border-color: #6366f1; }
-
-  .modal-body-text {
-    font-size: 0.875rem;
-    color: #475569;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-
-  /* Modal Footer */
-  .modal-footer-row {
-    display: flex;
-    gap: 10px;
-  }
-  .modal-btn-cancel {
-    flex: 1;
-    padding: 10px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 0.65rem;
-    background: #fff;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #475569;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .modal-btn-cancel:hover { border-color: #94a3b8; }
-
-  .modal-btn-confirm {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 0.65rem;
-    background: #6366f1;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .modal-btn-confirm:hover { background: #4f46e5; }
-
-  .modal-btn-danger {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 0.65rem;
-    background: #dc2626;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .modal-btn-danger:hover { background: #b91c1c; }
-</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // ===== UPDATE MODAL =====
   function openUpdateModal(orderId, currentStatus) {
-    document.getElementById('updateOrderId').textContent  = orderId.slice(0, 8) + '...';
-    document.getElementById('updateStatusSelect').value   = currentStatus;
-    document.getElementById('updateForm').action          =
-      '/orders/update/' + orderId + '/';
-
+    document.getElementById('updateOrderId').textContent = orderId.slice(0, 8) + '…';
+    document.getElementById('updateStatusSelect').value  = currentStatus;
+    document.getElementById('updateForm').action = '/orders/update/' + orderId + '/?role={{ role }}';
     document.getElementById('updateOverlay').classList.add('active');
     document.getElementById('updateModal').classList.add('active');
   }
-
   function closeUpdateModal() {
     document.getElementById('updateOverlay').classList.remove('active');
     document.getElementById('updateModal').classList.remove('active');
   }
-
-  // ===== DELETE MODAL =====
   function openDeleteModal(orderId) {
-    document.getElementById('deleteForm').action =
-      '/orders/delete/' + orderId + '/';
-
+    document.getElementById('deleteForm').action = '/orders/delete/' + orderId + '/?role={{ role }}';
     document.getElementById('deleteOverlay').classList.add('active');
     document.getElementById('deleteModal').classList.add('active');
   }
-
   function closeDeleteModal() {
     document.getElementById('deleteOverlay').classList.remove('active');
     document.getElementById('deleteModal').classList.remove('active');
