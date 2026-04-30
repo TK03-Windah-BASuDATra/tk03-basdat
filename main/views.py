@@ -1,8 +1,6 @@
-from django.shortcuts import redirect, render
-
+from django.urls import path
+from . import views
 from django.db import connection
-
-# Create your views here.
 from datetime import date
 
 def _format_omzet(n):
@@ -372,6 +370,6 @@ def event_saya(request):
 def cari_event(request):
     return redirect("event_list")
 
-
 def venue(request):
     return redirect("venue_list")
+

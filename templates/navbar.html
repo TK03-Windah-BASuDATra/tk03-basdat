@@ -28,10 +28,10 @@
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a>
+            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Manajemen Venue</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a>
+            <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Manajemen Kursi</a>
           </li>
 
           <li class="nav-item dropdown nav-dropdown">
@@ -46,13 +46,9 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Semua Order</a></li>
-              <li><a class="dropdown-item" href="{% url 'order_aset' %}?role={{ role }}">Order (Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Semua Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'order_aset' %}?role={{ role }}">Order(Aset)</a></li>
             </ul>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
           </li>
 
         {% elif role == "organizer" %}
@@ -94,7 +90,7 @@
               <li><a class="dropdown-item" href="{% url 'events:event_list' %}?role={{ role }}">Cari Event</a></li>
               <li><a class="dropdown-item" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a></li>
               <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
-              <li><a class="dropdown-item" href="{% url 'promosi' %}?role={{ role }}">Promosi</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:promosi' %}?role={{ role }}">Promosi</a></li>
             </ul>
           </li>
         {% endif %}
