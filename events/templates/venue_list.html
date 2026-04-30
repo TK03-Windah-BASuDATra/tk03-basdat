@@ -11,7 +11,7 @@
 
   {% if can_manage %}
     <a href="{% url 'events:venue_create' %}?role={{ role }}" class="btn btn-primary rounded-pill px-4">
-      + Tambah Venue
+      Tambah Venue
     </a>
   {% endif %}
 </div>
@@ -59,8 +59,8 @@
         <label class="form-label">Tipe Seating</label>
         <select name="seating" class="form-select">
           <option value="">Semua</option>
-          <option value="reserved" {% if request.GET.seating == 'reserved' %}selected{% endif %}>Reserved</option>
-          <option value="free" {% if request.GET.seating == 'free' %}selected{% endif %}>Free</option>
+          <option value="reserved" {% if request.GET.seating == 'reserved' %}selected{% endif %}>Reserved Seating</option>
+          <option value="free" {% if request.GET.seating == 'free' %}selected{% endif %}>Free Seating</option>
         </select>
       </div>
       <div class="col-md-2 d-flex align-items-end gap-2">
@@ -82,7 +82,15 @@
                 <h4 class="mb-1">{{ venue.venue_name }}</h4>
                 <div class="text-muted">{{ venue.city }}</div>
               </div>
-              <span class="badge-soft">{{ venue.get_seating_type_display }}</span>
+              {% if venue.seating_type == 'reserved' %}
+                <span class="seating-badge seating-badge-reserved">
+                  RESERVED SEATING
+                </span>
+              {% else %}
+                <span class="seating-badge seating-badge-free">
+                  FREE SEATING
+                </span>
+              {% endif %}
             </div>
 
             <div class="mb-3">

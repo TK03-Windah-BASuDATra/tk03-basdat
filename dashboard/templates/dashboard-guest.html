@@ -6,7 +6,7 @@
     <h1 class="page-title fs-2 mb-1">Temukan Acara Favoritmu</h1>
     <div class="opacity-75 small">Login untuk pengalaman yang lebih personal</div>
   </div>
-  <a href="{% url 'login' %}" class="btn btn-light rounded-pill px-4 fw-semibold">Login</a>
+  <a href="{% url 'accounts:login' %}" class="btn btn-light rounded-pill px-4 fw-semibold">Login</a>
 </div>
 
 <!-- STAT CARDS -->
@@ -114,8 +114,8 @@
         <h6 class="fw-bold mb-1">Mulai Petualanganmu</h6>
         <p class="text-muted small">Daftar sekarang dan nikmati kemudahan beli tiket, lacak pesanan, dan dapatkan promo eksklusif.</p>
         <div class="d-flex flex-column gap-2 mt-3">
-        <a href="{% url 'login' %}" class="btn btn-dark rounded-pill fw-semibold">Login</a>
-        <a href="{% url 'pilih_role' %}" class="btn btn-outline-secondary rounded-pill fw-semibold">Daftar Akun</a>
+        <a href="{% url 'accounts:login' %}" class="btn btn-dark rounded-pill fw-semibold">Login</a>
+        <a href="{% url 'accounts:pilih_role' %}" class="btn btn-outline-secondary rounded-pill fw-semibold">Daftar Akun</a>
         </div>
     </div>
     </div>

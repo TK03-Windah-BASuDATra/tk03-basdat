@@ -40,6 +40,10 @@
             <a href="{% url 'events:event_update' event.event_id %}?role={{ role }}" class="btn btn-outline-primary rounded-pill px-4">
               Edit Event
             </a>
+            <a href="{% url 'events:event_delete' event.event_id %}?role={{ role }}"
+     class="btn btn-outline-danger rounded-pill px-4">
+    Hapus Event
+  </a>
           </div>
         </div>
       </div>
