@@ -55,7 +55,7 @@ def venue_list(request):
         'can_manage': can_manage(request.user),
         'cities': Venue.objects.values_list('city', flat=True).distinct(),
     }
-    return render(request, 'events/venue_list.html', context)
+    return render(request, 'venue_list.html', context)
 
 
 def venue_create(request):
@@ -70,7 +70,7 @@ def venue_create(request):
     else:
         form = VenueForm()
 
-    return render(request, 'events/venue_form.html', {
+    return render(request, 'venue_form.html', {
         'form': form,
         'title': 'Tambah Venue'
     })
@@ -90,7 +90,7 @@ def venue_update(request, pk):
     else:
         form = VenueForm(instance=venue)
 
-    return render(request, 'events/venue_form.html', {
+    return render(request, 'venue_form.html', {
         'form': form,
         'title': 'Edit Venue'
     })
@@ -106,7 +106,7 @@ def venue_delete(request, pk):
         )
         return redirect('venue_list')
 
-    return render(request, 'events/venue_confirm_delete.html', {
+    return render(request, 'venue_confirm_delete.html', {
         'venue': venue
     })
 
@@ -134,7 +134,7 @@ def event_list(request):
         'events': events,
         'venues': Venue.objects.all(),
     }
-    return render(request, 'events/event_list.html', context)
+    return render(request, 'event_list.html', context)
 
 
 def event_manage_list(request):
@@ -147,7 +147,7 @@ def event_manage_list(request):
     context = {
         'events': events,
     }
-    return render(request, 'events/event_manage_list.html', context)
+    return render(request, 'event_manage_list.html', context)
 
 
 def event_create(request):
@@ -165,7 +165,7 @@ def event_create(request):
         form = EventForm()
         formset = TicketCategoryFormSet()
 
-    return render(request, 'events/event_form.html', {
+    return render(request, 'event_form.html', {
         'form': form,
         'formset': formset,
         'title': 'Buat Event'
@@ -195,7 +195,7 @@ def event_update(request, pk):
         form = EventForm(instance=event)
         formset = TicketCategoryFormSet(instance=event)
 
-    return render(request, 'events/event_form.html', {
+    return render(request, 'event_form.html', {
         'form': form,
         'formset': formset,
         'title': 'Edit Event'

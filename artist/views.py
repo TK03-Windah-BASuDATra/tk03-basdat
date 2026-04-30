@@ -61,7 +61,7 @@ def artist_list(request):
         'can_manage': _can_manage(role),
         'role': role,
     }
-    return render(request, 'artist/artist.html', context)
+    return render(request, 'artist.html', context)
 
 @require_POST
 def artist_create(request):

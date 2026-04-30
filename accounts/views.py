@@ -29,7 +29,7 @@ def login_view(request):
 
         messages.error(request, "Username dan password harus diisi.")
 
-    return render(request, "accounts/login.html", {
+    return render(request, "login.html", {
         "role": current_role,
     })
 
@@ -40,7 +40,7 @@ def pilih_role_view(request):
     if current_role != "guest":
         return redirect(f"{reverse('dashboard')}?role={current_role}")
 
-    return render(request, "accounts/pilih_role.html", {
+    return render(request, "pilih_role.html", {
         "role": current_role,
     })
 
@@ -64,7 +64,7 @@ def register_view(request, role):
     else:
         form = RegisterForm()
 
-    return render(request, "accounts/register.html", {
+    return render(request, "register.html", {
         "form": form,
         "role": role,
     })

@@ -37,7 +37,7 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}?role={{ role }}">Kategori Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tiket_aset' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
@@ -52,7 +52,7 @@
           </li>
 
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'artis' %}?role={{ role }}">Artis</a>
+            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
           </li>
 
         {% elif role == "organizer" %}
@@ -68,7 +68,7 @@
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'venue_list' %}?role={{ role }}">Venue</a></li>
               <li><a class="dropdown-item" href="{% url 'manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
-              <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}?role={{ role }}">Kategori Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Order</a></li>
               <li><a class="dropdown-item" href="{% url 'artis' %}?role={{ role }}">Artis</a></li>

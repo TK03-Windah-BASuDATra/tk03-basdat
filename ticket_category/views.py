@@ -67,7 +67,7 @@ def ticket_category_list(request):
         'can_manage':       _can_manage(role),
         'role':             role,
     }
-    return render(request, 'ticket_category/ticket_category.html', context)
+    return render(request, 'ticket_category.html', context)
 
 
 @require_POST
