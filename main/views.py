@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render
 
 def dashboard(request):
-    return render(request, "dashboard.html")
+    return render(request, "dashboard/dashboard.html")
 
 
 def _render_placeholder(request, title, description):

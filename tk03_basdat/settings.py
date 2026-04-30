@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'tickets',
     'seats',
+    'dashboard'
 ]
 
 AUTH_USER_MODEL = "accounts.User"
