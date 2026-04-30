@@ -315,14 +315,22 @@ def venue_create(request):
         "title": "Tambah Venue",
     })
 
-def venue_update(request, pk):
+def _post_object_id(request, key):
+    return request.POST.get(key, "").strip()
+
+def venue_update(request):
     role = _current_role(request)
 
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa mengubah venue.")
         return redirect(_with_role("events:venue_list", role))
 
-    venue = _find_venue(pk)
+    if request.method != "POST":
+        return redirect(_with_role("events:venue_list", role))
+
+    venue_id = _post_object_id(request, "venue_id")
+    venue = _find_venue(venue_id)
+
     if not venue:
         messages.error(request, "Venue tidak ditemukan.")
         return redirect(_with_role("events:venue_list", role))
@@ -335,7 +343,9 @@ def venue_update(request, pk):
         "seating_type": venue.seating_type,
     }
 
-    if request.method == "POST":
+    mode = request.POST.get("mode", "open")
+
+    if mode == "save":
         form = VenueDummyForm(request.POST)
         if form.is_valid():
             messages.success(request, "Simulasi edit venue berhasil.")
@@ -346,26 +356,36 @@ def venue_update(request, pk):
     return render(request, "venue_form.html", {
         "form": form,
         "title": "Edit Venue",
+        "venue_id": venue_id,
+        "mode": "save",
     })
 
-def venue_delete(request, pk):
+def venue_delete(request):
     role = _current_role(request)
 
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa menghapus venue.")
         return redirect(_with_role("events:venue_list", role))
 
-    venue = _find_venue(pk)
+    if request.method != "POST":
+        return redirect(_with_role("events:venue_list", role))
+
+    venue_id = _post_object_id(request, "venue_id")
+    venue = _find_venue(venue_id)
+
     if not venue:
         messages.error(request, "Venue tidak ditemukan.")
         return redirect(_with_role("events:venue_list", role))
 
-    if request.method == "POST":
+    mode = request.POST.get("mode", "open")
+
+    if mode == "confirm":
         messages.success(request, "Simulasi hapus venue berhasil.")
         return redirect(_with_role("events:venue_list", role))
 
     return render(request, "venue_confirm_delete.html", {
         "venue": venue,
+        "venue_id": venue_id,
     })
 
 def event_list(request):
@@ -433,14 +453,19 @@ def event_create(request):
         "title": "Buat Event",
     })
 
-def event_update(request, pk):
+def event_update(request):
     role = _current_role(request)
 
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa mengubah event.")
         return redirect(_with_role("dashboard", role))
 
-    event = _find_event(pk)
+    if request.method != "POST":
+        return redirect(_with_role("events:event_manage_list", role))
+
+    event_id = _post_object_id(request, "event_id")
+    event = _find_event(event_id)
+
     if not event:
         messages.error(request, "Event tidak ditemukan.")
         return redirect(_with_role("events:event_manage_list", role))
@@ -463,7 +488,9 @@ def event_update(request, pk):
         for ticket in event.ticket_categories.all()
     ]
 
-    if request.method == "POST":
+    mode = request.POST.get("mode", "open")
+
+    if mode == "save":
         form = EventDummyForm(request.POST)
         formset = TicketCategoryFormSet(request.POST, prefix="ticket_categories")
 
@@ -478,24 +505,34 @@ def event_update(request, pk):
         "form": form,
         "formset": formset,
         "title": "Edit Event",
+        "event_id": event_id,
+        "mode": "save",
     })
 
-def event_delete(request, pk):
+def event_delete(request):
     role = _current_role(request)
 
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa menghapus event.")
         return redirect(_with_role("events:event_manage_list", role))
 
-    event = _find_event(pk)
+    if request.method != "POST":
+        return redirect(_with_role("events:event_manage_list", role))
+
+    event_id = _post_object_id(request, "event_id")
+    event = _find_event(event_id)
+
     if not event:
         messages.error(request, "Event tidak ditemukan.")
         return redirect(_with_role("events:event_manage_list", role))
 
-    if request.method == "POST":
+    mode = request.POST.get("mode", "open")
+
+    if mode == "confirm":
         messages.success(request, "Event berhasil dihapus.")
         return redirect(_with_role("events:event_manage_list", role))
 
     return render(request, "event_confirm_delete.html", {
         "event": event,
+        "event_id": event_id,
     })

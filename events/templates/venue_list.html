@@ -11,7 +11,7 @@
 
   {% if can_manage %}
     <a href="{% url 'events:venue_create' %}?role={{ role }}" class="btn btn-primary rounded-pill px-4">
-      Tambah Venue
+      + Tambah Venue
     </a>
   {% endif %}
 </div>
@@ -105,12 +105,23 @@
 
             {% if can_manage %}
               <div class="d-flex gap-2">
-                <a href="{% url 'events:venue_update' venue.venue_id %}?role={{ role }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                  Edit
-                </a>
-                <a href="{% url 'events:venue_delete' venue.venue_id %}?role={{ role }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                  Hapus
-                </a>
+                <form method="post" action="{% url 'events:venue_update' %}?role={{ role }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="venue_id" value="{{ venue.venue_id }}">
+                  <input type="hidden" name="mode" value="open">
+                  <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                    Edit
+                  </button>
+                </form>
+
+                <form method="post" action="{% url 'events:venue_delete' %}?role={{ role }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="venue_id" value="{{ venue.venue_id }}">
+                  <input type="hidden" name="mode" value="open">
+                  <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    Hapus
+                  </button>
+                </form>
               </div>
             {% endif %}
           </div>

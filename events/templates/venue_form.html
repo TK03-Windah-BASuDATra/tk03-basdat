@@ -14,6 +14,10 @@
 
         <form method="post">
           {% csrf_token %}
+          {% if venue_id %}
+            <input type="hidden" name="venue_id" value="{{ venue_id }}">
+            <input type="hidden" name="mode" value="{{ mode|default:'save' }}">
+          {% endif %}
 
           {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
@@ -53,7 +57,9 @@
 
           <div class="d-flex gap-2 mt-4">
             <a href="{% url 'events:venue_list' %}?role={{ role }}" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
-            <button type="submit" class="btn btn-primary rounded-pill px-4">Tambah</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4">
+              {% if title == "Edit Venue" %}Simpan{% else %}Tambah{% endif %}
+            </button>
           </div>
         </form>
       </div>

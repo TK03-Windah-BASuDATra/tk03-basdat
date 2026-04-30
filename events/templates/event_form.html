@@ -14,6 +14,10 @@
 
         <form method="post">
           {% csrf_token %}
+          {% if event_id %}
+            <input type="hidden" name="event_id" value="{{ event_id }}">
+            <input type="hidden" name="mode" value="{{ mode|default:'save' }}">
+          {% endif %}
 
           {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>

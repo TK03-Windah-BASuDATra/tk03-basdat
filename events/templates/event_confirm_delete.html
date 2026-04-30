@@ -17,6 +17,9 @@
 
         <form method="post" class="mt-4">
           {% csrf_token %}
+          <input type="hidden" name="event_id" value="{{ event_id }}">
+          <input type="hidden" name="mode" value="confirm">
+
           <div class="d-flex justify-content-center gap-2">
             <a href="{% url 'events:event_manage_list' %}?role={{ role }}"
                class="btn btn-outline-secondary rounded-pill px-4">

@@ -37,13 +37,25 @@
               {% endfor %}
             </div>
 
-            <a href="{% url 'events:event_update' event.event_id %}?role={{ role }}" class="btn btn-outline-primary rounded-pill px-4">
-              Edit Event
-            </a>
-            <a href="{% url 'events:event_delete' event.event_id %}?role={{ role }}"
-     class="btn btn-outline-danger rounded-pill px-4">
-    Hapus Event
-  </a>
+            <div class="d-flex gap-2 flex-wrap">
+              <form method="post" action="{% url 'events:event_update' %}?role={{ role }}">
+                {% csrf_token %}
+                <input type="hidden" name="event_id" value="{{ event.event_id }}">
+                <input type="hidden" name="mode" value="open">
+                <button type="submit" class="btn btn-outline-primary rounded-pill px-4">
+                  Edit Event
+                </button>
+              </form>
+
+              <form method="post" action="{% url 'events:event_delete' %}?role={{ role }}">
+                {% csrf_token %}
+                <input type="hidden" name="event_id" value="{{ event.event_id }}">
+                <input type="hidden" name="mode" value="open">
+                <button type="submit" class="btn btn-outline-danger rounded-pill px-4">
+                  Hapus Event
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
