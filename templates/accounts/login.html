@@ -4,85 +4,93 @@
 
 {% block extra_css %}
 <style>
-  .auth-shell {
-    min-height: calc(100vh - 140px);
-    display: flex;
-    align-items: center;
-  }
-  .auth-card {
-    border: 0;
-    border-radius: 1.5rem;
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
-  }
   .brand-badge {
-    width: 64px;
-    height: 64px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #111827, #374151);
-    color: white;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: #4F6EF7;
+    font-size: 1rem;
+  }
+
+  .auth-card {
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  }
+
+  .form-control:focus {
+    border-color: #4F6EF7;
+    box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.1);
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="auth-shell py-4">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-7 col-lg-5">
-        <div class="card auth-card">
-          <div class="card-body p-4 p-md-5">
-            <div class="text-center mb-4">
-              <div class="brand-badge mx-auto">TT</div>
-              <h1 class="page-title h3 mb-2">Masuk ke Akun Anda</h1>
-              <p class="text-muted mb-0">Gunakan kredensial Anda untuk mengakses platform</p>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <!-- Brand Header -->
+      <div class="text-center mb-4">
+        <div class="brand-badge d-inline-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-2">TT</div>
+        <h1 class="fw-bold fs-2 mb-1">TikTakTuk</h1>
+        <p class="text-muted small mb-0">Platform Manajemen Pertunjukan &amp; Tiket</p>
+      </div>
+
+      <!-- Card -->
+      <div class="card auth-card border-0">
+        <div class="card-body p-4">
+
+          <h2 class="fw-bold fs-5 mb-1">Masuk ke Akun Anda</h2>
+          <p class="text-muted small mb-4">Gunakan kredensial Anda untuk mengakses platform</p>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-danger py-2 small">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="id_username" class="form-label fw-semibold small">Username</label>
+              <input
+                type="text"
+                name="username"
+                id="id_username"
+                class="form-control"
+                placeholder="Masukkan username"
+                required
+              >
             </div>
 
-            <form method="post">
-              {% csrf_token %}
+            <div class="mb-3">
+              <label for="id_password" class="form-label fw-semibold small">Password</label>
+              <input
+                type="password"
+                name="password"
+                id="id_password"
+                class="form-control"
+                placeholder="Masukkan password"
+                required
+              >
+            </div>
 
-              <div class="mb-3">
-                <label for="id_username" class="form-label">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  id="id_username"
-                  class="form-control form-control-lg"
-                  placeholder="Masukkan username"
-                  required
-                >
-              </div>
+            <button type="submit" class="btn btn-dark w-100 py-2 mt-1">
+              Masuk
+            </button>
+          </form>
 
-              <div class="mb-4">
-                <label for="id_password" class="form-label">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  id="id_password"
-                  class="form-control form-control-lg"
-                  placeholder="Masukkan password"
-                  required
-                >
-              </div>
-
-              <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill">
-                Masuk
-              </button>
-            </form>
-
-            <p class="text-center text-muted mt-4 mb-0">
-              Belum punya akun?
-              <a href="{% url 'pilih_role' %}" class="fw-semibold text-decoration-none">Daftar sekarang</a>
-            </p>
-          </div>
         </div>
       </div>
+
+      <!-- Footer Link -->
+      <p class="text-muted small text-center mt-3 mb-0">
+        Belum punya akun?
+        <a href="{% url 'pilih_role' %}" class="fw-semibold text-decoration-none" style="color: #4F6EF7;">Daftar sekarang</a>
+      </p>
+
     </div>
   </div>
-</section>
+</div>
 {% endblock %}
