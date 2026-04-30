@@ -38,8 +38,8 @@
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Tiket (Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
           </li>
 
@@ -65,7 +65,7 @@
               <li><a class="dropdown-item" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a></li>
               <li><a class="dropdown-item" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
               <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Order</a></li>
               <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
             </ul>
@@ -79,7 +79,7 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'tickets:manajemen_tiket' %}?role={{ role }}">Tiket Saya</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket Saya</a></li>
               <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Pesanan</a></li>
             </ul>
           </li>

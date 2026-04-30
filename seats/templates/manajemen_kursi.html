@@ -31,7 +31,9 @@
       <h1 class="page-title">{{ page_title }}</h1>
       <div class="text-muted small">Kelola kursi dan denah tempat duduk venue</div>
     </div>
+    {% if show_add_button %}
     <button class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#seatCreateModal">+ Tambah Kursi</button>
+    {% endif %}
   </div>
 
   <div class="stats">

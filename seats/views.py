@@ -2,6 +2,10 @@ from django.shortcuts import render
 
 # TODO Replace w real db logic later
 def manajemen_kursi(request):
+	user_role = request.GET.get('role', 'customer') or 'customer'
+	if user_role not in ['admin', 'organizer', 'customer']:
+		user_role = 'customer'
+
 	# TODO Replace w real seat and status data joined w HAS_RELATIONSHIP
 	seats = [
 		{"id": "seat_001", "section": "WVIP", "row": "A", "number": 1, "venue": "Jakarta Convention Center", "status": "Terisi"},
@@ -18,6 +22,7 @@ def manajemen_kursi(request):
 	total = len(seats)
 	tersedia = sum(1 for s in seats if s["status"] == "Tersedia")
 	terisi = sum(1 for s in seats if s["status"] == "Terisi")
+	show_add_button = user_role in ['admin', 'organizer']
 
 	context = {
 		"page_title": "Manajemen Kursi",
@@ -26,5 +31,6 @@ def manajemen_kursi(request):
 		"available_seats": tersedia,
 		"occupied_seats": terisi,
 		"venues": ["Semua Venue", "Jakarta Convention Center"],
+		"show_add_button": show_add_button,
 	}
 	return render(request, "manajemen_kursi.html", context)
