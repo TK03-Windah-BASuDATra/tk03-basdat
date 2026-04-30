@@ -43,7 +43,7 @@
 {% block content %}
 <div class="py-2">
 
-  {% if not request.user.is_authenticated %}
+  {% if role == "guest" %}
     <div class="card hero-card p-4 p-md-5 mb-4">
       <div class="row align-items-center g-4">
         <div class="col-lg-8">
@@ -72,7 +72,7 @@
             <div class="icon-chip">EV</div>
             <h5>Jelajahi Acara</h5>
             <p class="text-muted">Lihat daftar event yang tersedia untuk kebutuhan tampilan frontend.</p>
-            <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka Event</a>
+            <a href="{% url 'event_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka Event</a>
           </div>
         </div>
       </div>
@@ -83,13 +83,13 @@
             <div class="icon-chip">VN</div>
             <h5>Venue</h5>
             <p class="text-muted">Lihat daftar venue yang tersedia pada sistem.</p>
-            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+            <a href="{% url 'venue_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
           </div>
         </div>
       </div>
     </div>
 
-  {% elif request.user.is_superuser or request.user.role == "admin" %}
+  {% elif role == "admin" %}
     <div class="card hero-card p-4 p-md-5 mb-4">
       <h1 class="page-title text-white mb-2">Dashboard Admin</h1>
       <p class="text-white-50 mb-0">
@@ -104,7 +104,7 @@
             <div class="icon-chip">VN</div>
             <h5>Manajemen Venue</h5>
             <p class="text-muted">Kelola daftar venue dan informasi venue.</p>
-            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+            <a href="{% url 'venue_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka</a>
           </div>
         </div>
       </div>
@@ -116,8 +116,8 @@
             <h5>Kategori & Tiket</h5>
             <p class="text-muted">Kelola kategori tiket dan data tiket.</p>
             <div class="d-flex flex-wrap gap-2">
-              <a href="{% url 'kategori_tiket' %}" class="btn btn-outline-primary rounded-pill">Kategori</a>
-              <a href="{% url 'manajemen_tiket' %}" class="btn btn-outline-secondary rounded-pill">Tiket</a>
+              <a href="{% url 'kategori_tiket' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Kategori</a>
+              <a href="{% url 'manajemen_tiket' %}?role={{ role }}" class="btn btn-outline-secondary rounded-pill">Tiket</a>
             </div>
           </div>
         </div>
@@ -129,13 +129,13 @@
             <div class="icon-chip">OD</div>
             <h5>Order</h5>
             <p class="text-muted">Lihat dan kelola seluruh data order.</p>
-            <a href="{% url 'semua_order' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+            <a href="{% url 'semua_order' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka</a>
           </div>
         </div>
       </div>
     </div>
 
-  {% elif request.user.role == "organizer" %}
+  {% elif role == "organizer" %}
     <div class="card hero-card p-4 p-md-5 mb-4">
       <h1 class="page-title text-white mb-2">Dashboard Organizer</h1>
       <p class="text-white-50 mb-0">
@@ -150,7 +150,7 @@
             <div class="icon-chip">EV</div>
             <h5>Event Saya</h5>
             <p class="text-muted">Lihat dan kelola event yang kamu buat.</p>
-            <a href="{% url 'event_manage_list' %}" class="btn btn-outline-primary rounded-pill">Kelola Event</a>
+            <a href="{% url 'event_manage_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Kelola Event</a>
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@
             <div class="icon-chip">VN</div>
             <h5>Manajemen Venue</h5>
             <p class="text-muted">Kelola venue untuk kebutuhan event.</p>
-            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
+            <a href="{% url 'venue_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka Venue</a>
           </div>
         </div>
       </div>
@@ -173,15 +173,15 @@
             <h5>Tiket & Order</h5>
             <p class="text-muted">Kelola kategori tiket, tiket, dan seluruh order.</p>
             <div class="d-flex flex-wrap gap-2">
-              <a href="{% url 'kategori_tiket' %}" class="btn btn-outline-primary rounded-pill">Kategori</a>
-              <a href="{% url 'semua_order' %}" class="btn btn-outline-secondary rounded-pill">Order</a>
+              <a href="{% url 'kategori_tiket' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Kategori</a>
+              <a href="{% url 'semua_order' %}?role={{ role }}" class="btn btn-outline-secondary rounded-pill">Order</a>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-  {% elif request.user.role == "customer" %}
+  {% elif role == "customer" %}
     <div class="card hero-card p-4 p-md-5 mb-4">
       <h1 class="page-title text-white mb-2">Dashboard Customer</h1>
       <p class="text-white-50 mb-0">
@@ -196,7 +196,7 @@
             <div class="icon-chip">EV</div>
             <h5>Cari Event</h5>
             <p class="text-muted">Temukan event yang tersedia.</p>
-            <a href="{% url 'event_list' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+            <a href="{% url 'event_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka</a>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@
             <div class="icon-chip">VN</div>
             <h5>Venue</h5>
             <p class="text-muted">Lihat venue yang tersedia.</p>
-            <a href="{% url 'venue_list' %}" class="btn btn-outline-primary rounded-pill">Lihat</a>
+            <a href="{% url 'venue_list' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Lihat</a>
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@
             <div class="icon-chip">TK</div>
             <h5>Tiket Saya</h5>
             <p class="text-muted">Kelola tiket milikmu.</p>
-            <a href="{% url 'tiket_saya' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+            <a href="{% url 'tiket_saya' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka</a>
           </div>
         </div>
       </div>
@@ -229,7 +229,7 @@
             <div class="icon-chip">PS</div>
             <h5>Pesanan</h5>
             <p class="text-muted">Lihat daftar pesananmu.</p>
-            <a href="{% url 'pesanan' %}" class="btn btn-outline-primary rounded-pill">Buka</a>
+            <a href="{% url 'pesanan' %}?role={{ role }}" class="btn btn-outline-primary rounded-pill">Buka</a>
           </div>
         </div>
       </div>

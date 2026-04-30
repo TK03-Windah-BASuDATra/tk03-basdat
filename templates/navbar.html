@@ -6,7 +6,7 @@
 
 <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'dashboard' %}">TikTakTuk</a>
+    <a class="navbar-brand" href="{% url 'dashboard' %}?role={{ role|default:'guest' }}">TikTakTuk</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
       <span class="navbar-toggler-icon"></span>
@@ -15,115 +15,96 @@
     <div class="collapse navbar-collapse" id="navbarMain">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-        {% if not role %}
+        {% if role == "guest" or not role %}
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'login' %}">Login</a>
+            <a class="nav-link link-primary" href="{% url 'login' %}?role=guest">Login</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'pilih_role' %}">Registrasi</a>
+            <a class="nav-link link-primary" href="{% url 'pilih_role' %}?role=guest">Registrasi</a>
           </li>
 
-        {% else %}
+        {% elif role == "admin" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'venue_list' %}?role={{ role }}">Venue</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'manajemen_kursi' %}?role={{ role }}">Kursi</a>
+          </li>
 
-          {% if role == "admin" %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-            </li>
+          <li class="nav-item dropdown nav-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}?role={{ role }}">Kategori Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'tiket_aset' %}?role={{ role }}">Tiket (Aset)</a></li>
+            </ul>
+          </li>
 
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'venue_list' %}">Venue</a>
-            </li>
+          <li class="nav-item dropdown nav-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Semua Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'order_aset' %}?role={{ role }}">Order (Aset)</a></li>
+            </ul>
+          </li>
 
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'artis' %}?role={{ role }}">Artis</a>
+          </li>
 
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'manajemen_kursi' %}">Kursi</a>
-            </li>
+        {% elif role == "organizer" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'event_manage_list' %}?role={{ role }}">Event Saya</a>
+          </li>
 
+          <li class="nav-item dropdown nav-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">Lainnya</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'venue_list' %}?role={{ role }}">Venue</a></li>
+              <li><a class="dropdown-item" href="{% url 'manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
+              <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}?role={{ role }}">Kategori Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'artis' %}?role={{ role }}">Artis</a></li>
+            </ul>
+          </li>
 
-            <li class="nav-item dropdown nav-dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}">Kategori Tiket</a></li>
-                <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}">Manajemen Tiket</a></li>
-                <li><a class="dropdown-item" href="{% url 'tiket_aset' %}">Tiket (Aset)</a></li>
-              </ul>
-            </li>
+        {% elif role == "customer" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
+          </li>
 
+          <li class="nav-item dropdown nav-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'tiket_saya' %}?role={{ role }}">Tiket Saya</a></li>
+              <li><a class="dropdown-item" href="{% url 'pesanan' %}?role={{ role }}">Pesanan</a></li>
+            </ul>
+          </li>
 
-            <li class="nav-item dropdown nav-dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'semua_order' %}">Semua Order</a></li>
-                <li><a class="dropdown-item" href="{% url 'order_aset' %}">Order (Aset)</a></li>
-              </ul>
-            </li>
-
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'artis' %}">Artis</a>
-            </li>
-
-          {% elif role == "organizer" %}
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'event_manage_list' %}">Event Saya</a>
-            </li>
-
-
-            <li class="nav-item dropdown nav-dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button">Lainnya</a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'venue_list' %}">Venue</a></li>
-                <li><a class="dropdown-item" href="{% url 'manajemen_kursi' %}">Kursi</a></li>
-                <li><a class="dropdown-item" href="{% url 'kategori_tiket' %}">Kategori Tiket</a></li>
-                <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}">Manajemen Tiket</a></li>
-                <li><a class="dropdown-item" href="{% url 'semua_order' %}">Order</a></li>
-                <li><a class="dropdown-item" href="{% url 'artis' %}">Artis</a></li>
-              </ul>
-            </li>
-
-          {% elif role == "customer" %}
-
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-            </li>
-
-
-            <li class="nav-item dropdown nav-dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'tiket_saya' %}">Tiket Saya</a></li>
-                <li><a class="dropdown-item" href="{% url 'pesanan' %}">Pesanan</a></li>
-              </ul>
-            </li>
-
-
-            <li class="nav-item dropdown nav-dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button">Jelajahi</a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'event_list' %}">Cari Event</a></li>
-                <li><a class="dropdown-item" href="{% url 'venue_list' %}">Venue</a></li>
-                <li><a class="dropdown-item" href="{% url 'artis' %}">Artis</a></li>
-                <li><a class="dropdown-item" href="{% url 'promosi' %}">Promosi</a></li>
-              </ul>
-            </li>
-
-          {% endif %}
-
+          <li class="nav-item dropdown nav-dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">Jelajahi</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'event_list' %}?role={{ role }}">Cari Event</a></li>
+              <li><a class="dropdown-item" href="{% url 'venue_list' %}?role={{ role }}">Venue</a></li>
+              <li><a class="dropdown-item" href="{% url 'artis' %}?role={{ role }}">Artis</a></li>
+              <li><a class="dropdown-item" href="{% url 'promosi' %}?role={{ role }}">Promosi</a></li>
+            </ul>
+          </li>
         {% endif %}
       </ul>
 
       <div class="d-flex align-items-center gap-2">
-        {% if role %}
-        <!-- ini nanti ganti pake username -->
-          <!-- <span class="text-muted small">Hi, {{ request.user.username }}</span> -->
+        {% if role and role != "guest" %}
           <span class="text-muted small">Hi, {{ role|title }}</span>
-          <a href="{% url 'profile' %}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
-          <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
+          <a href="{% url 'profile' %}?role={{ role }}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
+          <a href="{% url 'logout' %}?role=guest" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
         {% endif %}
       </div>
     </div>

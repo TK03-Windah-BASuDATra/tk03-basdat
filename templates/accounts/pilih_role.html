@@ -54,7 +54,7 @@
 
             <div class="row g-3">
               <div class="col-md-6">
-                <a href="{% url 'register' 'customer' %}" class="text-decoration-none text-reset">
+                <a href="{% url 'register' 'customer' %}?role=guest" class="text-decoration-none text-reset">
                   <div class="role-card h-100">
                     <div class="role-icon">C</div>
                     <h5 class="mb-2">Pelanggan</h5>
@@ -66,7 +66,7 @@
               </div>
 
               <div class="col-md-6">
-                <a href="{% url 'register' 'organizer' %}" class="text-decoration-none text-reset">
+                <a href="{% url 'register' 'organizer' %}?role=guest" class="text-decoration-none text-reset">
                   <div class="role-card h-100">
                     <div class="role-icon">O</div>
                     <h5 class="mb-2">Penyelenggara</h5>
@@ -80,7 +80,7 @@
 
             <p class="text-center text-muted mt-4 mb-0">
               Sudah punya akun?
-              <a href="{% url 'login' %}" class="fw-semibold text-decoration-none">Login di sini</a>
+              <a href="{% url 'login' %}?role=guest" class="fw-semibold text-decoration-none">Login di sini</a>
             </p>
           </div>
         </div>

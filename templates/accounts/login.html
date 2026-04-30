@@ -17,7 +17,8 @@
     box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
   }
 
-  .form-control:focus {
+  .form-control:focus,
+  .form-select:focus {
     border-color: #4F6EF7;
     box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.1);
   }
@@ -28,26 +29,16 @@
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-md-6 col-lg-5">
-
-      <!-- Brand Header -->
       <div class="text-center mb-4">
         <div class="brand-badge d-inline-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-2">TT</div>
         <h1 class="fw-bold fs-2 mb-1">TikTakTuk</h1>
         <p class="text-muted small mb-0">Platform Manajemen Pertunjukan &amp; Tiket</p>
       </div>
 
-      <!-- Card -->
       <div class="card auth-card border-0">
         <div class="card-body p-4">
-
           <h2 class="fw-bold fs-5 mb-1">Masuk ke Akun Anda</h2>
           <p class="text-muted small mb-4">Gunakan kredensial Anda untuk mengakses platform</p>
-
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-danger py-2 small">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
 
           <form method="post">
             {% csrf_token %}
@@ -76,20 +67,26 @@
               >
             </div>
 
+            <div class="mb-3">
+              <label for="id_role" class="form-label fw-semibold small">Masuk sebagai</label>
+              <select name="role" id="id_role" class="form-select">
+                <option value="customer">Customer</option>
+                <option value="organizer">Organizer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
             <button type="submit" class="btn btn-dark w-100 py-2 mt-1">
               Masuk
             </button>
           </form>
-
         </div>
       </div>
 
-      <!-- Footer Link -->
       <p class="text-muted small text-center mt-3 mb-0">
         Belum punya akun?
-        <a href="{% url 'pilih_role' %}" class="fw-semibold text-decoration-none" style="color: #4F6EF7;">Daftar sekarang</a>
+        <a href="{% url 'pilih_role' %}?role=guest" class="fw-semibold text-decoration-none" style="color: #4F6EF7;">Daftar sekarang</a>
       </p>
-
     </div>
   </div>
 </div>

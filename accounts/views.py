@@ -1,37 +1,55 @@
-from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.urls import reverse
+
 from .forms import RegisterForm
 
+
+VALID_ROLES = ["guest", "admin", "organizer", "customer"]
+
+
+def _safe_role(role, default="guest"):
+    return role if role in VALID_ROLES else default
+
+
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+    current_role = _safe_role(request.GET.get("role", "guest"))
+
+    if current_role != "guest":
+        return redirect(f"{reverse('dashboard')}?role={current_role}")
 
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        role = _safe_role(request.POST.get("role", "customer"), "customer")
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
 
-        user = authenticate(request, username=username, password=password)
+        if username and password:
+            messages.success(request, f"Simulasi login berhasil sebagai {role}.")
+            return redirect(f"{reverse('dashboard')}?role={role}")
 
-        if user is not None:
-            login(request, user)
-            return redirect("dashboard")
+        messages.error(request, "Username dan password harus diisi.")
 
-        messages.error(request, "Username atau password salah.")
-
-    return render(request, "accounts/login.html")
+    return render(request, "accounts/login.html", {
+        "role": current_role,
+    })
 
 
 def pilih_role_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+    current_role = _safe_role(request.GET.get("role", "guest"))
 
-    return render(request, "accounts/pilih_role.html")
+    if current_role != "guest":
+        return redirect(f"{reverse('dashboard')}?role={current_role}")
+
+    return render(request, "accounts/pilih_role.html", {
+        "role": current_role,
+    })
 
 
 def register_view(request, role):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+    current_role = _safe_role(request.GET.get("role", "guest"))
+
+    if current_role != "guest":
+        return redirect(f"{reverse('dashboard')}?role={current_role}")
 
     if role not in ["organizer", "customer"]:
         messages.error(request, "Role tidak valid.")
@@ -41,9 +59,8 @@ def register_view(request, role):
         form = RegisterForm(request.POST)
 
         if form.is_valid():
-            user = form.save(role=role)
-            login(request, user)
-            return redirect("dashboard")
+            messages.success(request, f"Simulasi registrasi {role} berhasil.")
+            return redirect(f"{reverse('dashboard')}?role={role}")
     else:
         form = RegisterForm()
 
@@ -54,5 +71,5 @@ def register_view(request, role):
 
 
 def logout_view(request):
-    logout(request)
-    return redirect("login")
+    messages.success(request, "Simulasi logout berhasil.")
+    return redirect(f"{reverse('login')}?role=guest")
