@@ -674,9 +674,8 @@ def promotion_delete(request, promotion_id):
 
 
 def promotion_list(request):
-    role, username, redirect_response = _require_non_guest(request)
-    if redirect_response:
-        return redirect_response
+    role = _get_role(request)
+    username = _get_username(request)
 
     search_query = request.GET.get("q", "").strip()
     type_filter = request.GET.get("type", "").strip()
