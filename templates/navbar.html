@@ -15,7 +15,7 @@
     <div class="collapse navbar-collapse" id="navbarMain">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-        {% if role == "guest" or not role %}
+        {% if role == "guest" %}
           <li class="nav-item">
             <a class="nav-link link-primary" href="{% url 'login' %}?role=guest">Login</a>
           </li>
@@ -28,7 +28,7 @@
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'venue_list' %}?role={{ role }}">Venue</a>
+            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'manajemen_kursi' %}?role={{ role }}">Kursi</a>
@@ -60,18 +60,18 @@
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'event_manage_list' %}?role={{ role }}">Event Saya</a>
+            <a class="nav-link" href="{% url 'events:event_manage_list' %}?role={{ role }}">Event Saya</a>
           </li>
 
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Lainnya</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'venue_list' %}?role={{ role }}">Venue</a></li>
+              <li><a class="dropdown-item" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a></li>
               <li><a class="dropdown-item" href="{% url 'manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
               <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'manajemen_tiket' %}?role={{ role }}">Manajemen Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'semua_order' %}?role={{ role }}">Order</a></li>
-              <li><a class="dropdown-item" href="{% url 'artis' %}?role={{ role }}">Artis</a></li>
+              <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
             </ul>
           </li>
 
@@ -91,9 +91,9 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Jelajahi</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'event_list' %}?role={{ role }}">Cari Event</a></li>
-              <li><a class="dropdown-item" href="{% url 'venue_list' %}?role={{ role }}">Venue</a></li>
-              <li><a class="dropdown-item" href="{% url 'artis' %}?role={{ role }}">Artis</a></li>
+              <li><a class="dropdown-item" href="{% url 'events:event_list' %}?role={{ role }}">Cari Event</a></li>
+              <li><a class="dropdown-item" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a></li>
+              <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
               <li><a class="dropdown-item" href="{% url 'promosi' %}?role={{ role }}">Promosi</a></li>
             </ul>
           </li>

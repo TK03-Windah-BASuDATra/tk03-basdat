@@ -1,35 +1,41 @@
 from django.contrib import messages
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
 
 from .forms import EventForm, TicketCategoryFormSet, VenueForm
 from .models import Event, Venue
 
-
-def can_manage(user):
-    return user.is_authenticated and (
-        user.is_staff
-        or user.is_superuser
-        or getattr(user, 'role', '') in ['admin', 'organizer']
-    )
+VALID_ROLES = ["guest", "admin", "organizer", "customer"]
 
 
-def is_admin(user):
-    return user.is_authenticated and (
-        user.is_staff
-        or user.is_superuser
-        or getattr(user, 'role', '') == 'admin'
-    )
+def _safe_role(role, default="guest"):
+    return role if role in VALID_ROLES else default
 
-# VENUE
+
+def _current_role(request):
+    return _safe_role(request.GET.get("role", "guest"))
+
+
+def _with_role(url_name, role, *args):
+    from django.urls import reverse
+    return f"{reverse(url_name, args=args)}?role={role}"
+
+
+def can_manage(role):
+    return role in ["admin", "organizer"]
+
+
+def is_admin(role):
+    return role == "admin"
+
+
 def venue_list(request):
+    role = _current_role(request)
     venues = Venue.objects.all()
 
-    q = request.GET.get('q', '')
-    city = request.GET.get('city', '')
-    seating = request.GET.get('seating', '')
+    q = request.GET.get("q", "")
+    city = request.GET.get("city", "")
+    seating = request.GET.get("seating", "")
 
     if q:
         venues = venues.filter(
@@ -44,79 +50,89 @@ def venue_list(request):
         venues = venues.filter(seating_type=seating)
 
     stats = {
-        'total_venue': Venue.objects.count(),
-        'reserved_count': Venue.objects.filter(seating_type='reserved').count(),
-        'total_capacity': Venue.objects.aggregate(total=Sum('capacity'))['total'] or 0,
+        "total_venue": Venue.objects.count(),
+        "reserved_count": Venue.objects.filter(seating_type="reserved").count(),
+        "total_capacity": Venue.objects.aggregate(total=Sum("capacity"))["total"] or 0,
     }
 
     context = {
-        'venues': venues,
-        'stats': stats,
-        'can_manage': can_manage(request.user),
-        'cities': Venue.objects.values_list('city', flat=True).distinct(),
+        "venues": venues,
+        "stats": stats,
+        "can_manage": can_manage(role),
+        "cities": Venue.objects.values_list("city", flat=True).distinct(),
     }
-    return render(request, 'venue_list.html', context)
+    return render(request, "venue_list.html", context)
 
 
 def venue_create(request):
-    if request.method == 'POST':
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa menambah venue.")
+        return redirect(_with_role("events:venue_list", role))
+
+    if request.method == "POST":
         form = VenueForm(request.POST)
         if form.is_valid():
-            messages.success(
-                request,
-                'enue berhasil ditambahkan'
-            )
-            return redirect('venue_list')
+            messages.success(request, "Venue berhasil ditambahkan.")
+            return redirect(_with_role("events:venue_list", role))
     else:
         form = VenueForm()
 
-    return render(request, 'venue_form.html', {
-        'form': form,
-        'title': 'Tambah Venue'
+    return render(request, "venue_form.html", {
+        "form": form,
+        "title": "Tambah Venue",
     })
 
 
 def venue_update(request, pk):
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa mengubah venue.")
+        return redirect(_with_role("events:venue_list", role))
+
     venue = get_object_or_404(Venue, pk=pk)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = VenueForm(request.POST, instance=venue)
         if form.is_valid():
-            messages.success(
-                request,
-                'perubahan venue berhasil diproses'
-            )
-            return redirect('venue_list')
+            messages.success(request, "Perubahan venue berhasil diproses.")
+            return redirect(_with_role("events:venue_list", role))
     else:
         form = VenueForm(instance=venue)
 
-    return render(request, 'venue_form.html', {
-        'form': form,
-        'title': 'Edit Venue'
+    return render(request, "venue_form.html", {
+        "form": form,
+        "title": "Edit Venue",
     })
 
 
 def venue_delete(request, pk):
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa menghapus venue.")
+        return redirect(_with_role("events:venue_list", role))
+
     venue = get_object_or_404(Venue, pk=pk)
 
-    if request.method == 'POST':
-        messages.success(
-            request,
-            'venue berhasil dihapus'
-        )
-        return redirect('venue_list')
+    if request.method == "POST":
+        messages.success(request, "Venue berhasil dihapus.")
+        return redirect(_with_role("events:venue_list", role))
 
-    return render(request, 'venue_confirm_delete.html', {
-        'venue': venue
+    return render(request, "venue_confirm_delete.html", {
+        "venue": venue,
     })
 
-# EVENT
-def event_list(request):
-    events = Event.objects.select_related('venue', 'organizer').prefetch_related('ticket_categories').all()
 
-    q = request.GET.get('q', '')
-    venue_id = request.GET.get('venue', '')
-    artist = request.GET.get('artist', '')
+def event_list(request):
+    role = _current_role(request)
+    events = Event.objects.select_related("venue", "organizer").prefetch_related("ticket_categories").all()
+
+    q = request.GET.get("q", "")
+    venue_id = request.GET.get("venue", "")
+    artist = request.GET.get("artist", "")
 
     if q:
         events = events.filter(
@@ -131,72 +147,75 @@ def event_list(request):
         events = events.filter(artists__icontains=artist)
 
     context = {
-        'events': events,
-        'venues': Venue.objects.all(),
+        "events": events,
+        "venues": Venue.objects.all(),
+        "role": role,
     }
-    return render(request, 'event_list.html', context)
+    return render(request, "event_list.html", context)
 
 
 def event_manage_list(request):
-    events = Event.objects.select_related('venue', 'organizer').prefetch_related('ticket_categories')
+    role = _current_role(request)
 
-    if request.user.is_authenticated and not is_admin(request.user):
-        if getattr(request.user, 'role', '') == 'organizer':
-            events = events.filter(organizer=request.user)
+    if not can_manage(role):
+        messages.error(request, "Halaman ini hanya untuk admin atau organizer.")
+        return redirect(_with_role("dashboard", role))
+
+    events = Event.objects.select_related("venue", "organizer").prefetch_related("ticket_categories")
 
     context = {
-        'events': events,
+        "events": events,
     }
-    return render(request, 'event_manage_list.html', context)
+    return render(request, "event_manage_list.html", context)
 
 
 def event_create(request):
-    if request.method == 'POST':
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa membuat event.")
+        return redirect(_with_role("dashboard", role))
+
+    if request.method == "POST":
         form = EventForm(request.POST)
         formset = TicketCategoryFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            messages.success(
-                request,
-                'event berhasil dibuat'
-            )
-            return redirect('event_manage_list')
+            messages.success(request, "Event berhasil dibuat.")
+            return redirect(_with_role("events:event_manage_list", role))
     else:
         form = EventForm()
         formset = TicketCategoryFormSet()
 
-    return render(request, 'event_form.html', {
-        'form': form,
-        'formset': formset,
-        'title': 'Buat Event'
+    return render(request, "event_form.html", {
+        "form": form,
+        "formset": formset,
+        "title": "Buat Event",
     })
 
 
 def event_update(request, pk):
+    role = _current_role(request)
+
+    if not can_manage(role):
+        messages.error(request, "Hanya admin atau organizer yang bisa mengubah event.")
+        return redirect(_with_role("dashboard", role))
+
     event = get_object_or_404(Event, pk=pk)
 
-    if request.user.is_authenticated:
-        if not is_admin(request.user) and getattr(request.user, 'role', '') == 'organizer':
-            if event.organizer != request.user:
-                messages.error(request, 'Kamu tidak punya akses untuk mengubah event ini.')
-                return redirect('event_manage_list')
-
-    if request.method == 'POST':
+    if request.method == "POST":
         form = EventForm(request.POST, instance=event)
         formset = TicketCategoryFormSet(request.POST, instance=event)
 
         if form.is_valid() and formset.is_valid():
-            messages.success(
-                request,
-                'event berhasil diperbarui'
-            )
-            return redirect('event_manage_list')
+            messages.success(request, "Event berhasil diperbarui.")
+            return redirect(_with_role("events:event_manage_list", role))
     else:
         form = EventForm(instance=event)
         formset = TicketCategoryFormSet(instance=event)
 
-    return render(request, 'event_form.html', {
-        'form': form,
-        'formset': formset,
-        'title': 'Edit Event'
+    return render(request, "event_form.html", {
+        "form": form,
+        "formset": formset,
+        "title": "Edit Event",
     })

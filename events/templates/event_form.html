@@ -144,7 +144,7 @@
           </template>
 
           <div class="d-flex gap-2 mt-4">
-            <a href="{% url 'event_manage_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
+            <a href="{% url 'events:event_manage_list' %}?role={{ role }}" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
             <button type="submit" class="btn btn-primary rounded-pill px-4">Simpan</button>
           </div>
         </form>

@@ -10,7 +10,7 @@
   </div>
 
   {% if can_manage %}
-    <a href="{% url 'venue_create' %}" class="btn btn-primary rounded-pill px-4">
+    <a href="{% url 'events:venue_create' %}?role={{ role }}" class="btn btn-primary rounded-pill px-4">
       + Tambah Venue
     </a>
   {% endif %}
@@ -40,6 +40,8 @@
 <div class="card card-soft mb-4">
   <div class="card-body">
     <form method="get" class="row g-3">
+      <input type="hidden" name="role" value="{{ role }}">
+
       <div class="col-md-5">
         <label class="form-label">Cari venue</label>
         <input type="text" name="q" class="form-control" placeholder="Cari nama atau alamat venue" value="{{ request.GET.q }}">
@@ -63,7 +65,7 @@
       </div>
       <div class="col-md-2 d-flex align-items-end gap-2">
         <button type="submit" class="btn btn-primary w-100">Filter</button>
-        <a href="{% url 'venue_list' %}" class="btn btn-outline-secondary w-100">Reset</a>
+        <a href="{% url 'events:venue_list' %}?role={{ role }}" class="btn btn-outline-secondary w-100">Reset</a>
       </div>
     </form>
   </div>
@@ -95,10 +97,10 @@
 
             {% if can_manage %}
               <div class="d-flex gap-2">
-                <a href="{% url 'venue_update' venue.venue_id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <a href="{% url 'events:venue_update' venue.venue_id %}?role={{ role }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                   Edit
                 </a>
-                <a href="{% url 'venue_delete' venue.venue_id %}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                <a href="{% url 'events:venue_delete' venue.venue_id %}?role={{ role }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
                   Hapus
                 </a>
               </div>
