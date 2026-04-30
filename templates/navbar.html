@@ -28,6 +28,9 @@
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{% url 'events:event_manage_list' %}?role={{ role }}">Event Saya</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Manajemen Venue</a>
           </li>
           <li class="nav-item">
