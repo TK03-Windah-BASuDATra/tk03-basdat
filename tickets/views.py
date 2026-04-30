@@ -2,8 +2,9 @@ from django.shortcuts import render
 import uuid
 
 def manajemen_tiket(request):
-    # TODO: role
-    user_role = 'admin'
+    user_role = request.GET.get('role', 'customer') or 'customer'
+    if user_role not in ['admin', 'organizer', 'customer']:
+        user_role = 'customer'
 
     # TODO: Replace w data dr db
     dummy_tickets = [

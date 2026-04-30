@@ -88,6 +88,7 @@ def checkout(request, event_id):
     if redirect_response:
         return redirect_response
 
+    # ── Event ──────────────────────────────────
     with connection.cursor() as cur:
         cur.execute(
             """
@@ -117,6 +118,7 @@ def checkout(request, event_id):
         "venue_id": str(row[4]),
     }
 
+    # ── Artists ────────────────────────────────
     with connection.cursor() as cur:
         cur.execute(
             """
@@ -130,6 +132,7 @@ def checkout(request, event_id):
         )
         event["artists"] = [r[0] for r in cur.fetchall()]
 
+    # ── Ticket categories ──────────────────────
     with connection.cursor() as cur:
         cur.execute(
             """
@@ -151,6 +154,7 @@ def checkout(request, event_id):
         cat["category_id"] = str(cat["category_id"])
         cat["price"] = float(cat["price"])
 
+    # ── Seats ──────────────────────────────────
     with connection.cursor() as cur:
         cur.execute(
             """
@@ -199,7 +203,7 @@ def checkout(request, event_id):
                 if discount_type == "PERCENTAGE":
                     promo_success = f'Promo "{promo_code}" valid! Diskon {discount_value:.0f}%.'
                 else:
-                    promo_success = f'Promo "{promo_code}" valid! Diskon Rp {discount_value:,.0f}.'
+                    promo_error = 'Kode promo tidak valid.'
             else:
                 promo_error = "Kode promo tidak valid."
 
@@ -472,23 +476,35 @@ def order_delete(request, order_id):
     if request.method == "POST":
         if "confirm_delete" in request.POST:
             with connection.cursor() as cur:
+                # 1. Hapus has_relationship (referensi ke ticket)
                 cur.execute(
                     """
-                    DELETE FROM windah_basudatra."order"
-                    WHERE order_id = %s
+                    DELETE FROM windah_basudatra.has_relationship
+                    WHERE ticket_id IN (
+                        SELECT ticket_id FROM windah_basudatra.ticket
+                        WHERE order_id = %s
+                    )
                     """,
+                    [str(order_id)],
+                )
+                # 2. Hapus order_promotion (referensi ke order)
+                cur.execute(
+                    "DELETE FROM windah_basudatra.order_promotion WHERE order_id = %s",
+                    [str(order_id)],
+                )
+                # 3. Hapus ticket
+                cur.execute(
+                    "DELETE FROM windah_basudatra.ticket WHERE order_id = %s",
+                    [str(order_id)],
+                )
+                # 4. Hapus order
+                cur.execute(
+                    'DELETE FROM windah_basudatra."order" WHERE order_id = %s',
                     [str(order_id)],
                 )
             messages.success(request, "Order berhasil dihapus.")
 
         return redirect(_build_url("orders:semua_order", role, username))
-
-    context = {
-        "order": order,
-        "role": role,
-        "username": username,
-    }
-    return render(request, "order_delete.html", context)
 
 
 def promotion_create(request):
@@ -681,7 +697,7 @@ def promotion_list(request):
         WHERE 1=1
     """
     params = []
-
+ 
     if search_query:
         sql += " AND p.promo_code ILIKE %s"
         params.append(f"%{search_query}%")

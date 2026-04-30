@@ -57,7 +57,7 @@
   }
   .category-item.selected .cat-price { color: #6366f1; font-weight: 700; }
   .category-item input[type=radio] { display: none; }
-  .cat-name { font-weight: 600; font-size: 0.92rem; color: #1e293b; }
+  .cat-name  { font-weight: 600; font-size: 0.92rem; color: #1e293b; }
   .cat-quota { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
   .cat-price { font-weight: 600; font-size: 0.92rem; color: #334155; }
   .check-icon {
@@ -144,9 +144,8 @@
     position: sticky;
     top: 80px;
   }
-  .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; color: #64748b; }
+  .summary-row  { display: flex; justify-content: space-between; font-size: 0.88rem; color: #64748b; }
   .summary-total { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; color: #1e293b; }
-  .summary-total-price { color: #1e293b; }
   .pay-btn {
     background: #6366f1;
     color: #fff;
@@ -230,26 +229,22 @@
           <div class="section-sub">Setiap kategori memiliki fasilitas berbeda.</div>
 
           {% for cat in categories %}
-            <label class="category-item {% if forloop.last %}selected{% endif %}"
-                   id="cat-label-{{ cat.id }}"
-                   onclick="selectCategory(this, '{{ cat.id }}', {{ cat.price }})">
-              <input type="radio" name="category_id" value="{{ cat.id }}"
-                     {% if forloop.last %}checked{% endif %}>
+            {# Gunakan category_id (konsisten dengan views.py) #}
+            <label class="category-item {% if forloop.first %}selected{% endif %}"
+                   id="cat-label-{{ cat.category_id }}"
+                   onclick="selectCategory(this, '{{ cat.category_id }}', {{ cat.price }})">
+              <input type="radio" name="category_id" value="{{ cat.category_id }}"
+                     {% if forloop.first %}checked{% endif %}>
               <div>
-                <div class="cat-name">{{ cat.name }}</div>
+                <div class="cat-name">{{ cat.category_name }}</div>
                 <div class="cat-quota">Kuota: {{ cat.quota }} tiket</div>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="cat-price">Rp {{ cat.price|floatformat:0 }}</span>
-                {% if forloop.last %}
-                  <div class="check-icon" id="check-{{ cat.id }}">
-                    <i class="bi bi-check"></i>
-                  </div>
-                {% else %}
-                  <div class="check-icon d-none" id="check-{{ cat.id }}">
-                    <i class="bi bi-check"></i>
-                  </div>
-                {% endif %}
+                <div class="check-icon {% if not forloop.first %}d-none{% endif %}"
+                     id="check-{{ cat.category_id }}">
+                  <i class="bi bi-check"></i>
+                </div>
               </div>
             </label>
           {% empty %}
@@ -285,7 +280,7 @@
                             class="seat-btn"
                             onclick="toggleSeat(this, '{{ seat.seat_id }}')"
                             data-seat-id="{{ seat.seat_id }}">
-                      {{ seat.row_number }}{{ seat.seat_number|slice:"3:" }}
+                      {{ seat.row_number }}{{ seat.seat_number|slice:"1:" }}
                     </button>
                   {% empty %}
                     <span style="font-size:0.8rem; color:#94a3b8;">
@@ -293,7 +288,6 @@
                     </span>
                   {% endfor %}
                 </div>
-                <!-- Hidden input untuk seat yang dipilih -->
                 <input type="hidden" name="seat_ids" id="selectedSeats" value="">
               </div>
             </div>
@@ -304,9 +298,10 @@
           <div class="checkout-card p-3 mb-4" style="box-shadow:none; border:1.5px solid #e2e8f0 !important;">
             <div class="section-label mb-2">Kode Promo</div>
             <div class="d-flex">
+              {# promo_code dari context (view) agar input tetap terisi setelah POST #}
               <input type="text" name="promo_code" class="promo-input"
                      placeholder="CONTOH: TIKTAK20"
-                     value="{{ request.POST.promo_code|default:'' }}">
+                     value="{{ promo_code }}">
               <button type="submit" name="apply_promo" class="promo-btn">Terapkan</button>
             </div>
             {% if promo_error %}
@@ -321,7 +316,7 @@
             {% endif %}
           </div>
 
-          <!-- Tombol Bayar (tersembunyi di kolom kiri, yang aktif di sidebar) -->
+          <!-- Tombol Bayar (mobile) -->
           <button type="submit" name="place_order" id="payBtn" class="pay-btn d-lg-none">
             Bayar Sekarang
           </button>
@@ -340,8 +335,8 @@
         <hr style="border-color:#f1f5f9; margin: 12px 0;">
 
         <div class="summary-row mb-2">
-          <span id="summaryLabel">Category 2 × 2</span>
-          <span id="summarySubtotal">Rp 500,000</span>
+          <span id="summaryLabel">-</span>
+          <span id="summarySubtotal">Rp 0</span>
         </div>
         <div class="summary-row mb-3">
           <span>Biaya Layanan</span>
@@ -352,16 +347,16 @@
 
         <div class="summary-total mb-4">
           <span>Total</span>
-          <span class="summary-total-price" id="summaryTotal">Rp 500,000</span>
+          <span id="summaryTotal">Rp 0</span>
         </div>
 
-        <!-- Tombol Bayar di sidebar (desktop) -->
+        <!-- Tombol Bayar (desktop) -->
         <button type="submit" form="checkoutForm" name="place_order" class="pay-btn mb-3">
           Bayar Sekarang
         </button>
 
         <div style="font-size:0.73rem; color:#94a3b8; text-align:center;">
-          Konfirmasi tiket akan dikirim ke admin@example.com
+          Konfirmasi tiket akan dikirim ke {{ username|default:'-' }}
         </div>
       </div>
     </div>
@@ -373,50 +368,48 @@
 
 {% block extra_js %}
 <script>
-  // Data kategori dari Django (untuk update ringkasan)
+  // ── Data kategori dari Django ──────────────────────────────────────
+  // Gunakan category_id (konsisten dengan views.py)
   const categories = {
     {% for cat in categories %}
       "{{ cat.category_id }}": {
         name:  "{{ cat.category_name }}",
         price: {{ cat.price }}
-      },
+      }{% if not forloop.last %},{% endif %}
     {% endfor %}
   };
 
-  let selectedCategoryId   = null;
+  let selectedCategoryId    = null;
   let selectedCategoryPrice = 0;
   let selectedCategoryName  = '';
 
-  // Set default ke kategori terakhir (sesuai tampilan referensi)
+  // Default: kategori pertama (termahal, sesuai ORDER BY price DESC)
   {% if categories %}
     selectedCategoryId    = "{{ categories.0.category_id }}";
     selectedCategoryPrice = {{ categories.0.price }};
     selectedCategoryName  = "{{ categories.0.category_name }}";
   {% endif %}
 
+  // ── Pilih kategori ─────────────────────────────────────────────────
   function selectCategory(el, catId, price) {
-      // Hapus selected dari semua item
-      document.querySelectorAll('.category-item').forEach(item => {
-          item.classList.remove('selected');
-          const icon = item.querySelector('.check-icon');
-          if (icon) icon.classList.add('d-none');
-      });
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.classList.remove('selected');
+      const icon = item.querySelector('.check-icon');
+      if (icon) icon.classList.add('d-none');
+    });
 
-      // Tandai item yang diklik
-      el.classList.add('selected');
+    el.classList.add('selected');
+    const icon = el.querySelector('.check-icon');
+    if (icon) icon.classList.remove('d-none');
 
-      // Cari check-icon di dalam label yang diklik langsung
-      const icon = el.querySelector('.check-icon');
-      if (icon) icon.classList.remove('d-none');
+    selectedCategoryId    = catId;
+    selectedCategoryPrice = price;
+    selectedCategoryName  = categories[catId] ? categories[catId].name : '';
 
-      // Update variabel ringkasan
-      selectedCategoryId    = catId;
-      selectedCategoryPrice = price;
-      selectedCategoryName  = categories[catId] ? categories[catId].name : '';
-
-      updateSummary();
+    updateSummary();
   }
 
+  // ── Jumlah tiket ───────────────────────────────────────────────────
   function changeQty(delta) {
     const input = document.getElementById('qtyInput');
     let val = parseInt(input.value) + delta;
@@ -428,6 +421,7 @@
 
   document.getElementById('qtyInput').addEventListener('input', updateSummary);
 
+  // ── Update ringkasan ───────────────────────────────────────────────
   function updateSummary() {
     const qty      = parseInt(document.getElementById('qtyInput').value) || 1;
     const subtotal = selectedCategoryPrice * qty;
@@ -435,15 +429,14 @@
     document.getElementById('summaryLabel').textContent =
       (selectedCategoryName || 'Kategori') + ' × ' + qty;
 
-    document.getElementById('summarySubtotal').textContent =
-      'Rp ' + subtotal.toLocaleString('id-ID');
-
-    document.getElementById('summaryTotal').textContent =
-      'Rp ' + subtotal.toLocaleString('id-ID');
+    const formatted = 'Rp ' + subtotal.toLocaleString('id-ID');
+    document.getElementById('summarySubtotal').textContent = formatted;
+    document.getElementById('summaryTotal').textContent    = formatted;
   }
 
-  // Toggle pilih kursi
+  // ── Toggle pilih kursi ─────────────────────────────────────────────
   const selectedSeatIds = new Set();
+
   function toggleSeat(btn, seatId) {
     btn.classList.toggle('selected');
     if (selectedSeatIds.has(seatId)) {
@@ -455,7 +448,7 @@
       Array.from(selectedSeatIds).join(',');
   }
 
-  // Init ringkasan saat load
+  // ── Init saat load ─────────────────────────────────────────────────
   updateSummary();
 </script>
 {% endblock %}
