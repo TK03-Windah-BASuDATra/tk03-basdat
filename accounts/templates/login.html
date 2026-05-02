@@ -4,89 +4,184 @@
 
 {% block extra_css %}
 <style>
-  .brand-badge {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: #4F6EF7;
-    font-size: 1rem;
-  }
+  .login-brand { text-align: center; margin-bottom: 1.75rem; }
+  .login-brand h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: .2rem; letter-spacing: -.02em; }
+  .login-brand p  { font-size: .9rem; color: #6b7280; }
 
   .auth-card {
-    border-radius: 1.25rem;
-    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  }
+  .auth-card .card-body { padding: 2.5rem 2.75rem; }
+  .auth-title { font-size: 1.3rem; font-weight: 800; margin: 0 0 .25rem; color: #111827; letter-spacing: -.02em; }
+  .auth-subtitle { font-size: .85rem; color: #6b7280; margin-bottom: 1.75rem; }
+
+  .form-control:focus {
+    border-color: #3b5bdb;
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.12);
   }
 
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #4F6EF7;
-    box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.1);
+  .mb-field { margin-bottom: 1.25rem; }
+  .form-label { font-weight: 600; }
+
+  /* Role radio cards */
+  .role-radio-group { display: flex; flex-direction: column; gap: .6rem; }
+  .role-radio-input { display: none; }
+
+  .role-radio-label {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: .85rem;
+    padding: .85rem 1.1rem;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    user-select: none;
   }
+  .role-radio-label:hover {
+    border-color: #3b5bdb;
+    box-shadow: 0 4px 14px rgba(59,91,219,.1);
+  }
+  .role-radio-input:checked + .role-radio-label {
+    border-color: #3b5bdb;
+    background: #eef2ff;
+    box-shadow: 0 4px 14px rgba(59,91,219,.13);
+  }
+
+  .role-radio-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .2s, color .2s;
+  }
+  .role-radio-input:checked + .role-radio-label .role-radio-icon {
+    background: #3b5bdb;
+    color: #fff;
+  }
+
+  .role-radio-name { font-size: .85rem; font-weight: 700; color: #111827; }
+  .role-radio-desc { font-size: .72rem; color: #9ca3af; margin: 0; }
+
+  .role-radio-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    margin-left: auto;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .2s;
+  }
+  .role-radio-dot::after {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3b5bdb;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .role-radio-input:checked + .role-radio-label .role-radio-dot { border-color: #3b5bdb; }
+  .role-radio-input:checked + .role-radio-label .role-radio-dot::after { opacity: 1; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-      <div class="text-center mb-4">
-        <div class="brand-badge d-inline-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-2">TT</div>
-        <h1 class="fw-bold fs-2 mb-1">TikTakTuk</h1>
-        <p class="text-muted small mb-0">Platform Manajemen Pertunjukan &amp; Tiket</p>
+    <div class="col-md-7 col-lg-6">
+
+      <div class="login-brand">
+        <h1>TikTakTuk</h1>
+        <p>Platform Manajemen Pertunjukan &amp; Tiket</p>
       </div>
 
       <div class="card auth-card border-0">
-        <div class="card-body p-4">
-          <h2 class="fw-bold fs-5 mb-1">Masuk ke Akun Anda</h2>
-          <p class="text-muted small mb-4">Gunakan kredensial Anda untuk mengakses platform</p>
+        <div class="card-body">
+          <h2 class="auth-title">Masuk ke Akun Anda</h2>
+          <p class="auth-subtitle">Gunakan kredensial Anda untuk mengakses platform</p>
 
           <form method="post">
             {% csrf_token %}
 
-            <div class="mb-3">
-              <label for="id_username" class="form-label fw-semibold small">Username</label>
-              <input
-                type="text"
-                name="username"
-                id="id_username"
-                class="form-control"
-                placeholder="Masukkan username"
-                required
-              >
+            <div class="mb-field">
+              <label for="id_username" class="form-label">Username</label>
+              <input type="text" name="username" id="id_username" class="form-control"
+                placeholder="Masukkan username" required>
             </div>
 
-            <div class="mb-3">
-              <label for="id_password" class="form-label fw-semibold small">Password</label>
-              <input
-                type="password"
-                name="password"
-                id="id_password"
-                class="form-control"
-                placeholder="Masukkan password"
-                required
-              >
+            <div class="mb-field">
+              <label for="id_password" class="form-label">Password</label>
+              <input type="password" name="password" id="id_password" class="form-control"
+                placeholder="Masukkan password" required>
             </div>
 
-            <div class="mb-3">
-              <label for="id_role" class="form-label fw-semibold small">Masuk sebagai</label>
-              <select name="role" id="id_role" class="form-select">
-                <option value="customer">Customer</option>
-                <option value="organizer">Organizer</option>
-                <option value="admin">Admin</option>
-              </select>
+            <div class="mb-field">
+              <label class="form-label">Masuk sebagai</label>
+              <div class="role-radio-group">
+
+                <input type="radio" name="role" id="role_customer" value="customer" class="role-radio-input" checked>
+                <label for="role_customer" class="role-radio-label">
+                  <div class="role-radio-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="role-radio-name">Customer</div>
+                    <p class="role-radio-desc">Beli dan kelola tiket acara favorit Anda.</p>
+                  </div>
+                  <div class="role-radio-dot"></div>
+                </label>
+
+                <input type="radio" name="role" id="role_organizer" value="organizer" class="role-radio-input">
+                <label for="role_organizer" class="role-radio-label">
+                  <div class="role-radio-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="role-radio-name">Organizer</div>
+                    <p class="role-radio-desc">Buat dan kelola acara serta venue Anda.</p>
+                  </div>
+                  <div class="role-radio-dot"></div>
+                </label>
+
+                <input type="radio" name="role" id="role_admin" value="admin" class="role-radio-input">
+                <label for="role_admin" class="role-radio-label">
+                  <div class="role-radio-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="role-radio-name">Admin</div>
+                    <p class="role-radio-desc">Kelola sistem dan pantau aktivitas platform.</p>
+                  </div>
+                  <div class="role-radio-dot"></div>
+                </label>
+
+              </div>
             </div>
 
-            <button type="submit" class="btn btn-dark w-100 py-2 mt-1">
-              Masuk
-            </button>
+            <button type="submit" class="btn btn-dark w-100 py-2 mt-1">Masuk</button>
           </form>
         </div>
       </div>
 
       <p class="text-muted small text-center mt-3 mb-0">
         Belum punya akun?
-        <a href="{% url 'accounts:pilih_role' %}?role=guest" class="fw-semibold text-decoration-none" style="color: #4F6EF7;">Daftar sekarang</a>
+        <a href="{% url 'accounts:register' %}" class="fw-semibold text-decoration-none" style="color:#3b5bdb;">Daftar sekarang</a>
       </p>
+
     </div>
   </div>
 </div>

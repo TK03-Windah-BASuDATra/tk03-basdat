@@ -8,6 +8,7 @@
   <div class="container">
     <a class="navbar-brand" href="{% url 'dashboard' %}?role={{ role|default:'guest' }}">TikTakTuk</a>
 
+    {% if request.path != '/accounts/login/' and request.path != '/accounts/register/' %}
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -17,10 +18,10 @@
 
         {% if role == "guest" %}
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'accounts:login' %}?role=guest">Login</a>
+            <a class="nav-link link-primary" href="{% url 'accounts:login' %}">Login</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'accounts:pilih_role' %}?role=guest">Registrasi</a>
+            <a class="nav-link link-primary" href="{% url 'accounts:register' %}">Registrasi</a>
           </li>
 
         {% elif role == "admin" %}
@@ -36,7 +37,9 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Manajemen Kursi</a>
           </li>
-
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
+          </li>
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
@@ -45,7 +48,6 @@
               <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
           </li>
-
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Order</a>
             <ul class="dropdown-menu">
@@ -61,7 +63,6 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'events:event_manage_list' %}?role={{ role }}">Event Saya</a>
           </li>
-
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Lainnya</a>
             <ul class="dropdown-menu">
@@ -78,7 +79,6 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
-
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
             <ul class="dropdown-menu">
@@ -86,7 +86,6 @@
               <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Pesanan</a></li>
             </ul>
           </li>
-
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Jelajahi</a>
             <ul class="dropdown-menu">
@@ -97,15 +96,18 @@
             </ul>
           </li>
         {% endif %}
+
       </ul>
 
       <div class="d-flex align-items-center gap-2">
         {% if role and role != "guest" %}
           <span class="text-muted small">Hi, {{ role|title }}</span>
-          <a href="{% url 'accounts:profile' %}?role={{ role }}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
-          <a href="{% url 'accounts:logout' %}?role=guest" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
+          <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
+          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
         {% endif %}
       </div>
     </div>
+    {% endif %}
+
   </div>
 </nav>
