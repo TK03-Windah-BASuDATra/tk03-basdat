@@ -52,6 +52,9 @@
     transition: color .2s;
     font-family: inherit;
   }
+  .reg-sidebar-back {
+      margin-left: -3px;
+    }
   .reg-sidebar-back:hover { color: #fff; }
   .reg-sidebar-back:hover .back-arrow { transform: translateX(-3px); }
   .back-arrow { transition: transform .2s; display: inline-flex; }
@@ -187,11 +190,6 @@
     background: #eef2ff;
     color: #4F6EF7;
     flex-shrink: 0;
-    transition: background .2s, color .2s;
-  }
-  .role-radio-input:checked + .role-radio-label .role-radio-icon {
-    background: #eef2ff;
-    color: #4F6EF7;
   }
 
   .role-radio-name { font-size: .88rem; font-weight: 700; color: #111827; margin-bottom: .15rem; }
@@ -219,7 +217,7 @@
   .role-radio-input:checked + .role-radio-label .role-radio-dot { border-color: #4F6EF7; }
   .role-radio-input:checked + .role-radio-label .role-radio-dot::after { opacity: 1; }
 
-  /* Success */
+  /* ── Success ── */
   .success-wrap {
     flex: 1;
     display: flex;
@@ -232,13 +230,17 @@
   .success-circle {
     width: 100px; height: 100px;
     border-radius: 50%;
-    background: #dcfce7;
+    background: #1e1b4b;
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.5rem;
     animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both;
-    color: #16a34a;
+    box-shadow:
+      0 0 0 10px rgba(30,27,75,.12),
+      0 0 0 20px rgba(30,27,75,.06),
+      0 8px 24px rgba(30,27,75,.25);
   }
   @keyframes popIn {
     0%   { transform: scale(.4); opacity: 0; }
@@ -246,7 +248,7 @@
   }
   .success-wrap h2 { font-size: 1.4rem; font-weight: 800; color: #111827; letter-spacing: -.02em; }
   .success-countdown { font-size: .8rem; color: #9ca3af; margin-top: .5rem; }
-  .success-countdown span { font-weight: 700; color: #16a34a; }
+  .success-countdown span { font-weight: 700; color: #1e1b4b; }
 </style>
 {% endblock %}
 
@@ -355,22 +357,13 @@
         </div>
         <h2>All Done!</h2>
         <p class="text-muted small mb-1">Akun Anda telah berhasil dibuat dan siap digunakan.</p>
-        <p class="success-countdown">Mengalihkan dalam <span id="countdown">5</span> detik...</p>
+        <p class="success-countdown">Mengalihkan dalam <span id="countdown">8</span> detik...</p>
         <a href="{% url 'accounts:login' %}" class="btn btn-dark mt-4 px-5 py-2">Login Sekarang</a>
       </div>
 
       {% elif step == 1 %}
       <h2 class="reg-main-title">Buat Akun</h2>
       <p class="text-muted small mb-4">Isi username dan password untuk memulai.</p>
-
-      {% for message in messages %}
-        {% if message.tags == 'info' %}
-          <div class="alert py-2 small mb-3" style="background:#dcfce7;border-color:#bbf7d0;color:#15803d;">
-            ✓ {{ message }}
-          </div>
-        {% endif %}
-      {% endfor %}
-
       <form method="post" action="{% url 'accounts:register' %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="1">
@@ -481,11 +474,14 @@
         {% elif readonly %}Data terisi otomatis dari akun Anda sebelumnya.
         {% else %}Lengkapi informasi profil Anda.{% endif %}
       </p>
-      {% if readonly and role != "admin" %}
-        <div class="alert py-2 small mb-3" style="background:#dcfce7;border-color:#bbf7d0;color:#15803d;">
-          ✓ Data sudah terisi otomatis. Klik <strong>Daftar</strong> untuk melanjutkan.
-        </div>
-      {% endif %}
+        {% if readonly and role != "admin" %}
+          <div class="alert py-2 small mb-3" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:.4rem;flex-shrink:0;vertical-align:middle;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Data sudah terisi otomatis. Klik <strong>Daftar</strong> untuk melanjutkan.
+          </div>
+        {% endif %}
       <form method="post" action="{% url 'accounts:register' %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="3">
@@ -543,7 +539,7 @@
     });
     const cd = document.getElementById('countdown');
     if (cd) {
-      let n = 5;
+      let n =8;
       const t = setInterval(() => {
         n--;
         cd.textContent = n;
@@ -552,4 +548,4 @@
     }
   });
 </script>
-{% endblock %}  
+{% endblock %}

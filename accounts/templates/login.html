@@ -17,8 +17,8 @@
   .auth-subtitle { font-size: .85rem; color: #6b7280; margin-bottom: 1.75rem; }
 
   .form-control:focus {
-    border-color: #3b5bdb;
-    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.12);
+    border-color: #4F6EF7;
+    box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.1);
   }
 
   .mb-field { margin-bottom: 1.25rem; }
@@ -36,33 +36,29 @@
     border-radius: .85rem;
     padding: .85rem 1.1rem;
     cursor: pointer;
-    transition: border-color .2s, box-shadow .2s, background .2s;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+    background: #fff;
     user-select: none;
   }
   .role-radio-label:hover {
-    border-color: #3b5bdb;
-    box-shadow: 0 4px 14px rgba(59,91,219,.1);
+    border-color: #4F6EF7;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(79,110,247,.12);
   }
   .role-radio-input:checked + .role-radio-label {
-    border-color: #3b5bdb;
-    background: #eef2ff;
-    box-shadow: 0 4px 14px rgba(59,91,219,.13);
+    border-color: #4F6EF7;
+    box-shadow: 0 8px 24px rgba(79,110,247,.12);
   }
 
   .role-radio-icon {
     width: 36px; height: 36px;
     border-radius: 8px;
-    background: #f1f5f9;
-    color: #64748b;
+    background: #eef2ff;
+    color: #4F6EF7;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: background .2s, color .2s;
-  }
-  .role-radio-input:checked + .role-radio-label .role-radio-icon {
-    background: #3b5bdb;
-    color: #fff;
   }
 
   .role-radio-name { font-size: .85rem; font-weight: 700; color: #111827; }
@@ -83,11 +79,11 @@
     content: '';
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #3b5bdb;
+    background: #4F6EF7;
     opacity: 0;
     transition: opacity .2s;
   }
-  .role-radio-input:checked + .role-radio-label .role-radio-dot { border-color: #3b5bdb; }
+  .role-radio-input:checked + .role-radio-label .role-radio-dot { border-color: #4F6EF7; }
   .role-radio-input:checked + .role-radio-label .role-radio-dot::after { opacity: 1; }
 </style>
 {% endblock %}
@@ -179,7 +175,7 @@
 
       <p class="text-muted small text-center mt-3 mb-0">
         Belum punya akun?
-        <a href="{% url 'accounts:register' %}" class="fw-semibold text-decoration-none" style="color:#3b5bdb;">Daftar sekarang</a>
+        <a href="{% url 'accounts:register' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Daftar sekarang</a>
       </p>
 
     </div>
