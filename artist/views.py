@@ -79,7 +79,7 @@ def artist_create(request):
                 INSERT INTO windah_basudatra.artist (name, genre)
                 VALUES (%s, %s)
             ''', [nama, genre])
-
+    
     return redirect(f'/artist/?role={role}')
 
 @require_GET

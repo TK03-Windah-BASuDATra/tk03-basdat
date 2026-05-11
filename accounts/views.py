@@ -366,7 +366,7 @@ def profile(request):
         'display_name': display_name,
         'full_name': full_name,
         'phone_number': phone_number,
-        'email': email,
+        'contact_email': email,
         'organizer_name': organizer_name,
     })
 
