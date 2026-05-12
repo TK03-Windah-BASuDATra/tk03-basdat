@@ -28,7 +28,6 @@ class EventForm(forms.Form):
         widget=forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
     )
     image_url = forms.URLField(label="Image URL", required=False)
-    artists = forms.CharField(label="Artis", max_length=255)
     description = forms.CharField(
         label="Deskripsi",
         required=False,
@@ -60,6 +59,35 @@ class TicketCategoryForm(forms.Form):
 
 TicketCategoryFormSet = formset_factory(
     TicketCategoryForm,
+    extra=1,
+    can_delete=True,
+)
+
+class EventArtistDummyForm(forms.Form):
+    artist = forms.ChoiceField(label="Artis")
+    role = forms.CharField(
+        label="Role",
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Contoh: Headliner, Guest Star, Opening Act"
+        })
+    )
+    DELETE = forms.BooleanField(label="Hapus", required=False)
+
+    def __init__(self, *args, artist_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["artist"].choices = artist_choices or []
+        self.fields["artist"].widget.attrs.update({"class": "form-select"})
+
+        for name, field in self.fields.items():
+            if name != "DELETE":
+                field.widget.attrs.setdefault("class", "form-control")
+
+
+EventArtistFormSet = formset_factory(
+    EventArtistDummyForm,
     extra=1,
     can_delete=True,
 )

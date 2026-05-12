@@ -49,10 +49,80 @@
             </div>
 
             <div class="col-md-12">
-              <label class="form-label">{{ form.artists.label }}</label>
-              {{ form.artists }}
-              <div class="form-text">Pisahkan artis dengan koma. Contoh: Hindia, Fourtwnty, Nadin Amizah</div>
-              <div class="text-danger small">{{ form.artists.errors }}</div>
+              <hr class="my-4">
+
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Artis Event</h5>
+                  <p class="text-muted small mb-0">Pilih artis dan rolenya pada event ini.</p>
+                </div>
+                <button type="button" id="add-artist-form" class="btn btn-outline-primary rounded-pill">
+                  + Tambah Artis
+                </button>
+              </div>
+
+              {{ artist_formset.management_form }}
+
+              {% if artist_formset.non_form_errors %}
+                <div class="alert alert-danger">{{ artist_formset.non_form_errors }}</div>
+              {% endif %}
+
+              <div id="artist-formset">
+                {% for artist_form in artist_formset %}
+                  <div class="artist-form card border-0 bg-light-subtle mb-3">
+                    <div class="card-body">
+                      {% for hidden in artist_form.hidden_fields %}
+                        {{ hidden }}
+                      {% endfor %}
+
+                      <div class="row g-3">
+                        <div class="col-md-5">
+                          <label class="form-label">{{ artist_form.artist.label }}</label>
+                          {{ artist_form.artist }}
+                          <div class="text-danger small">{{ artist_form.artist.errors }}</div>
+                        </div>
+
+                        <div class="col-md-5">
+                          <label class="form-label">{{ artist_form.role.label }}</label>
+                          {{ artist_form.role }}
+                          <div class="text-danger small">{{ artist_form.role.errors }}</div>
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                          {% if artist_form.DELETE %}
+                            <div class="form-check">
+                              {{ artist_form.DELETE }}
+                              <label class="form-check-label" for="{{ artist_form.DELETE.id_for_label }}">
+                                Hapus
+                              </label>
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <template id="empty-artist-form">
+                <div class="artist-form card border-0 bg-light-subtle mb-3">
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-5">
+                        <label class="form-label">Artis</label>
+                        {{ artist_formset.empty_form.artist }}
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label">Role</label>
+                        {{ artist_formset.empty_form.role }}
+                      </div>
+                      <div class="col-md-2 d-flex align-items-end">
+                        <span class="text-muted small">Form baru</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
 
             <div class="col-md-12">
@@ -176,5 +246,19 @@
       totalForms.value = formIndex + 1;
     });
   });
+
+  const addArtistButton = document.getElementById('add-artist-form');
+  const artistFormsetContainer = document.getElementById('artist-formset');
+  const artistTotalForms = document.getElementById('id_event_artists-TOTAL_FORMS');
+  const artistTemplate = document.getElementById('empty-artist-form');
+
+  if (addArtistButton && artistFormsetContainer && artistTotalForms && artistTemplate) {
+    addArtistButton.addEventListener('click', function () {
+      const formIndex = parseInt(artistTotalForms.value, 10);
+      let newFormHtml = artistTemplate.innerHTML.replace(/__prefix__/g, formIndex);
+      artistFormsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
+      artistTotalForms.value = formIndex + 1;
+    });
+  }
 </script>
 {% endblock %}

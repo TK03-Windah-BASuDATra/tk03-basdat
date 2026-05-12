@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db import DatabaseError, connection, transaction
 from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
-from .forms import EventForm, TicketCategoryFormSet, VenueForm
+from .forms import EventForm, TicketCategoryFormSet, VenueForm, EventArtistFormSet
 
 VALID_ROLES = ["guest", "admin", "organizer", "customer"]
 
@@ -48,7 +48,7 @@ def _table_columns(table_name):
             """
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_schema = 'public'
+            WHERE table_schema = current_schema()
             AND table_name = %s
             """,
             [table_name],
@@ -241,7 +241,6 @@ def _load_events():
                 ticket_categories=TicketCategoryCollection(ticket_map.get(event_id, [])),
             )
         )
-
     return events
 
 def _find_event(pk):
@@ -318,44 +317,6 @@ def _current_organizer_id(request):
     if not row:
         raise DatabaseError("Tidak ada data organizer. Tambahkan dummy data organizer terlebih dahulu.")
     return row[0]
-
-def _split_artists(artists_text):
-    return [name.strip() for name in artists_text.split(",") if name.strip()]
-
-def _get_or_create_artist(cursor, artist_name):
-    cursor.execute(
-        "SELECT artist_id FROM artist WHERE LOWER(name) = LOWER(%s) LIMIT 1",
-        [artist_name],
-    )
-    row = cursor.fetchone()
-    if row:
-        return row[0]
-
-    cursor.execute(
-        """
-        INSERT INTO artist (artist_id, name)
-        VALUES (gen_random_uuid(), %s)
-        RETURNING artist_id
-        """,
-        [artist_name],
-    )
-    return cursor.fetchone()[0]
-
-def _sync_event_artists(cursor, event_id, artists_text):
-    if not (_table_exists("artist") and _table_exists("event_artist")):
-        return
-
-    cursor.execute("DELETE FROM event_artist WHERE event_id = %s", [event_id])
-    for artist_name in _split_artists(artists_text):
-        artist_id = _get_or_create_artist(cursor, artist_name)
-        cursor.execute(
-            """
-            INSERT INTO event_artist (event_id, artist_id)
-            VALUES (%s, %s)
-            ON CONFLICT DO NOTHING
-            """,
-            [event_id, artist_id],
-        )
 
 def _clean_ticket_forms(formset):
     tickets = []
@@ -576,10 +537,16 @@ def event_create(request):
         return redirect(_dashboard_or_event_list(role))
 
     venues = _load_venues()
+    artist_choices = _load_artist_choices()
     if request.method == "POST":
         form = EventForm(request.POST, venues=venues)
         formset = TicketCategoryFormSet(request.POST, prefix="ticket_categories")
-        if form.is_valid() and formset.is_valid():
+        artist_formset = EventArtistFormSet(
+            request.POST or None,
+            prefix="event_artists",
+            form_kwargs={"artist_choices": artist_choices},
+        )
+        if form.is_valid() and formset.is_valid() and artist_formset.is_valid():
             try:
                 tickets = _clean_ticket_forms(formset)
                 with transaction.atomic(), connection.cursor() as cursor:
@@ -611,7 +578,7 @@ def event_create(request):
                         params,
                     )
                     event_id = cursor.fetchone()[0]
-                    _sync_event_artists(cursor, event_id, form.cleaned_data["artists"])
+                    _save_event_artists(cursor, event_id, artist_formset)
                     _sync_ticket_categories(cursor, event_id, tickets)
 
                 messages.success(request, "Event berhasil dibuat.")
@@ -621,8 +588,12 @@ def event_create(request):
     else:
         form = EventForm(venues=venues)
         formset = TicketCategoryFormSet(prefix="ticket_categories")
+        artist_formset = EventArtistFormSet(
+            prefix="event_artists",
+            form_kwargs={"artist_choices": artist_choices},
+        )
 
-    return render(request, "event_form.html", {"form": form, "formset": formset, "title": "Buat Event", "role": role})
+    return render(request, "event_form.html", {"form": form, "formset": formset, "title": "Buat Event", "role": role, "artist_formset": artist_formset, })
 
 def event_update(request):
     role = _current_role(request)
@@ -640,12 +611,19 @@ def event_update(request):
         return redirect(_with_role("events:event_manage_list", role))
 
     venues = _load_venues()
+    artist_choices = _load_artist_choices()
     mode = request.POST.get("mode", "open")
 
     if mode == "save":
         form = EventForm(request.POST, venues=venues)
         formset = TicketCategoryFormSet(request.POST, prefix="ticket_categories")
-        if form.is_valid() and formset.is_valid():
+        artist_formset = EventArtistFormSet(
+            request.POST,
+            prefix="event_artists",
+            form_kwargs={"artist_choices": artist_choices},
+        )
+
+        if form.is_valid() and formset.is_valid() and artist_formset.is_valid():
             try:
                 tickets = _clean_ticket_forms(formset)
                 with transaction.atomic(), connection.cursor() as cursor:
@@ -656,19 +634,20 @@ def event_update(request):
                         form.cleaned_data["event_datetime"],
                         form.cleaned_data["venue"],
                     ]
+
                     if "description" in event_cols:
                         set_sql.append("description = %s")
                         params.append(form.cleaned_data.get("description") or "")
                     if "image_url" in event_cols:
                         set_sql.append("image_url = %s")
                         params.append(form.cleaned_data.get("image_url") or "")
-                    params.append(event_id)
 
+                    params.append(event_id)
                     cursor.execute(
                         f"UPDATE event SET {', '.join(set_sql)} WHERE event_id = %s",
                         params,
                     )
-                    _sync_event_artists(cursor, event_id, form.cleaned_data["artists"])
+                    _save_event_artists(cursor, event_id, artist_formset)
                     _sync_ticket_categories(cursor, event_id, tickets)
 
                 messages.success(request, "Event berhasil diperbarui.")
@@ -682,7 +661,6 @@ def event_update(request):
                 "venue": event.venue.venue_id if event.venue else "",
                 "event_datetime": event.event_datetime.strftime("%Y-%m-%dT%H:%M"),
                 "image_url": event.image_url,
-                "artists": event.artists,
                 "description": event.description,
             },
             venues=venues,
@@ -694,6 +672,11 @@ def event_update(request):
             ],
             prefix="ticket_categories",
         )
+        artist_formset = EventArtistFormSet(
+            initial=_load_event_artist_initial(event_id),
+            prefix="event_artists",
+            form_kwargs={"artist_choices": artist_choices},
+        )
 
     return render(
         request,
@@ -701,6 +684,7 @@ def event_update(request):
         {
             "form": form,
             "formset": formset,
+            "artist_formset": artist_formset,
             "title": "Edit Event",
             "event_id": event_id,
             "mode": "save",
@@ -738,3 +722,66 @@ def event_delete(request):
             return redirect(_with_role("events:event_manage_list", role))
 
     return render(request, "event_confirm_delete.html", {"event": event, "event_id": event_id, "role": role})
+
+def _load_artist_choices():
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT artist_id, name
+            FROM artist
+            ORDER BY name
+        """)
+        rows = cursor.fetchall()
+
+    return [("", "Pilih artis")] + [(str(row[0]), row[1]) for row in rows]
+
+def _load_event_artist_initial(event_id):
+    if not (_table_exists("event_artist") and _table_exists("artist")):
+        return []
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT ea.artist_id, ea.role
+            FROM event_artist ea
+            JOIN artist a ON a.artist_id = ea.artist_id
+            WHERE ea.event_id = %s
+            ORDER BY a.name
+            """,
+            [event_id],
+        )
+        rows = cursor.fetchall()
+
+    return [
+        {
+            "artist": str(row[0]),
+            "role": row[1] or "",
+        }
+        for row in rows
+    ]
+
+def _save_event_artists(cursor, event_id, artist_formset):
+    if not _table_exists("event_artist"):
+        return
+
+    cursor.execute("DELETE FROM event_artist WHERE event_id = %s", [event_id])
+
+    for artist_form in artist_formset:
+        if not artist_form.cleaned_data:
+            continue
+
+        if artist_form.cleaned_data.get("DELETE"):
+            continue
+
+        artist_id = artist_form.cleaned_data.get("artist")
+        artist_role = artist_form.cleaned_data.get("role")
+
+        if not artist_id or not artist_role:
+            continue
+
+        cursor.execute(
+            """
+            INSERT INTO event_artist (event_id, artist_id, role)
+            VALUES (%s, %s, %s)
+            """,
+            [event_id, artist_id, artist_role],
+        )
