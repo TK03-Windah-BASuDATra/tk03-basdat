@@ -1,33 +1,62 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from types import SimpleNamespace
-
-from django import forms
 from django.contrib import messages
-from django.db import connection
-from django.forms import formset_factory
+from django.db import DatabaseError, connection, transaction
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
+from .forms import EventForm, TicketCategoryFormSet, VenueForm
 
 VALID_ROLES = ["guest", "admin", "organizer", "customer"]
 
 def _safe_role(role, default="guest"):
     return role if role in VALID_ROLES else default
 
-
 def _current_role(request):
-    return _safe_role(request.GET.get("role", "guest"))
-
-def _with_role(url_name, role, *args):
-    return f"{reverse(url_name, args=args)}?role={role}"
+    return _safe_role(request.GET.get("role") or request.POST.get("role") or "guest")
 
 def can_manage(role):
     return role in ["admin", "organizer"]
 
+def _with_role(url_name, role, *args):
+    return f"{reverse(url_name, args=args)}?role={role}"
+
+def _dashboard_or_event_list(role):
+    try:
+        return _with_role("dashboard", role)
+    except NoReverseMatch:
+        return _with_role("events:event_list", role)
+
 def _dictfetchall(cursor):
     columns = [col[0] for col in cursor.description]
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+def _db_error_message(exc):
+    cause = getattr(exc, "__cause__", None)
+    diag = getattr(cause, "diag", None)
+    primary = getattr(diag, "message_primary", None)
+    if primary:
+        return primary
+    return str(exc).split("\n")[0]
+
+@lru_cache(maxsize=None)
+def _table_columns(table_name):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            AND table_name = %s
+            """,
+            [table_name],
+        )
+        return {row[0] for row in cursor.fetchall()}
+
+def _table_exists(table_name):
+    return bool(_table_columns(table_name))
 
 @dataclass
 class VenueView:
@@ -72,8 +101,10 @@ class EventView:
         return min(prices) if prices else 0
 
 def _load_venues():
-    with connection.cursor() as cursor:
-        cursor.execute("""
+    has_seat_table = _table_exists("seat") and "venue_id" in _table_columns("seat")
+
+    if has_seat_table:
+        sql = """
             SELECT
                 v.venue_id,
                 v.venue_name,
@@ -85,35 +116,55 @@ def _load_venues():
             LEFT JOIN seat s ON s.venue_id = v.venue_id
             GROUP BY v.venue_id, v.venue_name, v.capacity, v.address, v.city
             ORDER BY v.venue_name
-        """)
+        """
+    else:
+        sql = """
+            SELECT
+                v.venue_id,
+                v.venue_name,
+                v.capacity,
+                v.address,
+                v.city,
+                0 AS seat_count
+            FROM venue v
+            ORDER BY v.venue_name
+        """
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
         rows = _dictfetchall(cursor)
 
-    venues = []
-    for row in rows:
-        seating_type = "reserved" if int(row["seat_count"] or 0) > 0 else "free"
-        venues.append(
-            VenueView(
-                venue_id=str(row["venue_id"]),
-                venue_name=row["venue_name"],
-                capacity=row["capacity"],
-                address=row["address"],
-                city=row["city"],
-                seating_type=seating_type,
-            )
+    return [
+        VenueView(
+            venue_id=str(row["venue_id"]),
+            venue_name=row["venue_name"],
+            capacity=row["capacity"],
+            address=row["address"],
+            city=row["city"],
+            seating_type="reserved" if int(row["seat_count"] or 0) > 0 else "free",
         )
-    return venues
+        for row in rows
+    ]
+
+def _find_venue(pk):
+    pk = str(pk)
+    for venue in _load_venues():
+        if venue.venue_id == pk:
+            return venue
+    return None
 
 def _load_ticket_categories_by_event():
+    if not _table_exists("ticket_category"):
+        return defaultdict(list)
+
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT
-                event_id,
-                category_name,
-                price,
-                quota
+        cursor.execute(
+            """
+            SELECT event_id, category_name, price, quota
             FROM ticket_category
             ORDER BY category_name
-        """)
+            """
+        )
         rows = _dictfetchall(cursor)
 
     grouped = defaultdict(list)
@@ -132,19 +183,32 @@ def _load_events():
     venue_map = {v.venue_id: v for v in venues}
     ticket_map = _load_ticket_categories_by_event()
 
+    event_cols = _table_columns("event")
+    description_sql = "e.description" if "description" in event_cols else "NULL::text"
+    image_sql = "e.image_url" if "image_url" in event_cols else "NULL::text"
+
+    has_artist_join = _table_exists("event_artist") and _table_exists("artist")
+    artist_sql = "COALESCE(STRING_AGG(DISTINCT a.name, ', '), '-')" if has_artist_join else "'-'"
+    artist_join_sql = """
+            LEFT JOIN event_artist ea ON ea.event_id = e.event_id
+            LEFT JOIN artist a ON a.artist_id = ea.artist_id
+    """ if has_artist_join else ""
+
     with connection.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            f"""
             SELECT
                 e.event_id,
                 e.event_title,
                 e.event_datetime,
                 e.venue_id,
                 o.organizer_name,
-                COALESCE(STRING_AGG(DISTINCT a.name, ', '), '-') AS artists
+                {description_sql} AS description,
+                {image_sql} AS image_url,
+                {artist_sql} AS artists
             FROM event e
             JOIN organizer o ON o.organizer_id = e.organizer_id
-            LEFT JOIN event_artist ea ON ea.event_id = e.event_id
-            LEFT JOIN artist a ON a.artist_id = ea.artist_id
+            {artist_join_sql}
             GROUP BY
                 e.event_id,
                 e.event_title,
@@ -152,14 +216,17 @@ def _load_events():
                 e.venue_id,
                 o.organizer_name
             ORDER BY e.event_datetime
-        """)
+            """
+        )
         rows = _dictfetchall(cursor)
 
     events = []
     for row in rows:
         event_id = str(row["event_id"])
         venue = venue_map.get(str(row["venue_id"]))
-        tickets = ticket_map.get(event_id, [])
+        description = row.get("description") or (
+            f"Event {row['event_title']} di {venue.venue_name if venue else 'venue pilihan'}."
+        )
 
         events.append(
             EventView(
@@ -168,22 +235,14 @@ def _load_events():
                 event_datetime=row["event_datetime"],
                 venue=venue,
                 organizer=SimpleNamespace(username=row["organizer_name"]),
-                artists=row["artists"] or "-",
-                description=f"Event {row['event_title']} di {venue.venue_name if venue else 'venue pilihan'}.",
-                image_url="",
-                ticket_categories=TicketCategoryCollection(tickets),
+                artists=row.get("artists") or "-",
+                description=description,
+                image_url=row.get("image_url") or "",
+                ticket_categories=TicketCategoryCollection(ticket_map.get(event_id, [])),
             )
         )
 
     return events
-
-def _find_venue(pk):
-    pk = str(pk)
-    for venue in _load_venues():
-        if venue.venue_id == pk:
-            return venue
-    return None
-
 
 def _find_event(pk):
     pk = str(pk)
@@ -192,73 +251,139 @@ def _find_event(pk):
             return event
     return None
 
-class VenueDummyForm(forms.Form):
-    venue_name = forms.CharField(label="Nama Venue", max_length=100)
-    capacity = forms.IntegerField(label="Kapasitas", min_value=1)
-    city = forms.CharField(label="Kota", max_length=100)
-    address = forms.CharField(label="Alamat", widget=forms.Textarea(attrs={"rows": 3}))
-    seating_type = forms.ChoiceField(
-        label="Tipe Seating",
-        choices=[
-            ("reserved", "Reserved"),
-            ("free", "Free"),
-        ],
+def _post_object_id(request, key):
+    return request.POST.get(key, "").strip()
+
+def _sync_seats(cursor, venue_id, capacity, seating_type):
+    seat_cols = _table_columns("seat")
+    if "venue_id" not in seat_cols:
+        return
+
+    cursor.execute("DELETE FROM seat WHERE venue_id = %s", [venue_id])
+
+    if seating_type != "reserved":
+        return
+
+    if {"section", "seat_number", "row_number"}.issubset(seat_cols):
+        cursor.execute(
+            """
+            INSERT INTO seat (seat_id, section, seat_number, row_number, venue_id)
+            SELECT
+                gen_random_uuid(),
+                'Regular',
+                CONCAT('S', LPAD((((gs - 1) %% 50) + 1)::text, 3, '0')),
+                CONCAT('R', CEIL(gs / 50.0)::int),
+                %s
+            FROM generate_series(1, %s) AS gs
+            """,
+            [venue_id, capacity],
+        )
+    elif "seat_number" in seat_cols:
+        cursor.execute(
+            """
+            INSERT INTO seat (seat_id, venue_id, seat_number)
+            SELECT gen_random_uuid(), %s, CONCAT('S', gs)
+            FROM generate_series(1, %s) AS gs
+            """,
+            [venue_id, capacity],
+        )
+    elif "seat_label" in seat_cols:
+        cursor.execute(
+            """
+            INSERT INTO seat (seat_id, venue_id, seat_label)
+            SELECT gen_random_uuid(), %s, CONCAT('S', gs)
+            FROM generate_series(1, %s) AS gs
+            """,
+            [venue_id, capacity],
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO seat (seat_id, venue_id)
+            SELECT gen_random_uuid(), %s
+            FROM generate_series(1, %s)
+            """,
+            [venue_id, capacity],
+        )
+
+def _current_organizer_id(request):
+    organizer_id = request.POST.get("organizer_id") or request.GET.get("organizer_id")
+    if organizer_id:
+        return organizer_id
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT organizer_id FROM organizer ORDER BY organizer_name LIMIT 1")
+        row = cursor.fetchone()
+
+    if not row:
+        raise DatabaseError("Tidak ada data organizer. Tambahkan dummy data organizer terlebih dahulu.")
+    return row[0]
+
+def _split_artists(artists_text):
+    return [name.strip() for name in artists_text.split(",") if name.strip()]
+
+def _get_or_create_artist(cursor, artist_name):
+    cursor.execute(
+        "SELECT artist_id FROM artist WHERE LOWER(name) = LOWER(%s) LIMIT 1",
+        [artist_name],
     )
+    row = cursor.fetchone()
+    if row:
+        return row[0]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            if name == "address":
-                field.widget.attrs.update({"class": "form-control"})
-            elif name == "seating_type":
-                field.widget.attrs.update({"class": "form-select"})
-            else:
-                field.widget.attrs.update({"class": "form-control"})
-
-class EventDummyForm(forms.Form):
-    event_title = forms.CharField(label="Judul Event", max_length=150)
-    venue = forms.ChoiceField(label="Venue")
-    event_datetime = forms.DateTimeField(
-        label="Tanggal & Waktu Event",
-        input_formats=["%Y-%m-%dT%H:%M"],
-        widget=forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
+    cursor.execute(
+        """
+        INSERT INTO artist (artist_id, name)
+        VALUES (gen_random_uuid(), %s)
+        RETURNING artist_id
+        """,
+        [artist_name],
     )
-    image_url = forms.URLField(label="Image URL", required=False)
-    artists = forms.CharField(label="Artis", max_length=255)
-    description = forms.CharField(label="Deskripsi", widget=forms.Textarea(attrs={"rows": 4}))
+    return cursor.fetchone()[0]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["venue"].choices = [
-            (v.venue_id, v.venue_name) for v in _load_venues()
-        ]
+def _sync_event_artists(cursor, event_id, artists_text):
+    if not (_table_exists("artist") and _table_exists("event_artist")):
+        return
 
-        for name, field in self.fields.items():
-            if name == "venue":
-                field.widget.attrs.update({"class": "form-select"})
-            elif name == "description":
-                field.widget.attrs.update({"class": "form-control"})
-            elif name != "event_datetime":
-                field.widget.attrs.update({"class": "form-control"})
+    cursor.execute("DELETE FROM event_artist WHERE event_id = %s", [event_id])
+    for artist_name in _split_artists(artists_text):
+        artist_id = _get_or_create_artist(cursor, artist_name)
+        cursor.execute(
+            """
+            INSERT INTO event_artist (event_id, artist_id)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            [event_id, artist_id],
+        )
 
-class TicketCategoryDummyForm(forms.Form):
-    category_name = forms.CharField(label="Nama Kategori", max_length=100)
-    price = forms.IntegerField(label="Harga", min_value=0)
-    quota = forms.IntegerField(label="Kuota", min_value=1)
-    DELETE = forms.BooleanField(label="Hapus", required=False)
+def _clean_ticket_forms(formset):
+    tickets = []
+    for form in formset:
+        if not form.cleaned_data or form.cleaned_data.get("DELETE"):
+            continue
+        tickets.append(
+            {
+                "category_name": form.cleaned_data["category_name"],
+                "price": form.cleaned_data["price"],
+                "quota": form.cleaned_data["quota"],
+            }
+        )
+    return tickets
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            if name == "DELETE":
-                continue
-            field.widget.attrs.update({"class": "form-control"})
+def _sync_ticket_categories(cursor, event_id, tickets):
+    if not _table_exists("ticket_category"):
+        return
 
-TicketCategoryFormSet = formset_factory(
-    TicketCategoryDummyForm,
-    extra=1,
-    can_delete=True,
-)
+    cursor.execute("DELETE FROM ticket_category WHERE event_id = %s", [event_id])
+    for ticket in tickets:
+        cursor.execute(
+            """
+            INSERT INTO ticket_category (event_id, category_name, price, quota)
+            VALUES (%s, %s, %s, %s)
+            """,
+            [event_id, ticket["category_name"], ticket["price"], ticket["quota"]],
+        )
 
 def venue_list(request):
     role = _current_role(request)
@@ -270,57 +395,66 @@ def venue_list(request):
     seating = request.GET.get("seating", "").strip()
 
     if q:
-        venues = [
-            v for v in venues
-            if q in v.venue_name.lower() or q in v.address.lower()
-        ]
-
+        venues = [v for v in venues if q in v.venue_name.lower() or q in v.address.lower()]
     if city:
         venues = [v for v in venues if v.city.lower() == city.lower()]
-
     if seating:
         venues = [v for v in venues if v.seating_type == seating]
 
-    stats = {
-        "total_venue": len(all_venues),
-        "reserved_count": sum(1 for v in all_venues if v.seating_type == "reserved"),
-        "total_capacity": sum(v.capacity for v in all_venues),
-    }
-
-    context = {
-        "venues": venues,
-        "stats": stats,
-        "can_manage": can_manage(role),
-        "cities": sorted({v.city for v in all_venues}),
-    }
-    return render(request, "venue_list.html", context)
+    return render(
+        request,
+        "venue_list.html",
+        {
+            "venues": venues,
+            "role": role,
+            "can_manage": can_manage(role),
+            "cities": sorted({v.city for v in all_venues}),
+            "stats": {
+                "total_venue": len(all_venues),
+                "reserved_count": sum(1 for v in all_venues if v.seating_type == "reserved"),
+                "total_capacity": sum(v.capacity for v in all_venues),
+            },
+        },
+    )
 
 def venue_create(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa menambah venue.")
         return redirect(_with_role("events:venue_list", role))
 
     if request.method == "POST":
-        form = VenueDummyForm(request.POST)
+        form = VenueForm(request.POST)
         if form.is_valid():
-            messages.success(request, "Simulasi tambah venue berhasil.")
-            return redirect(_with_role("events:venue_list", role))
+            try:
+                with transaction.atomic(), connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT sp_create_venue(%s, %s, %s, %s)",
+                        [
+                            form.cleaned_data["venue_name"],
+                            form.cleaned_data["capacity"],
+                            form.cleaned_data["address"],
+                            form.cleaned_data["city"],
+                        ],
+                    )
+                    venue_id = cursor.fetchone()[0]
+                    _sync_seats(
+                        cursor,
+                        venue_id,
+                        form.cleaned_data["capacity"],
+                        form.cleaned_data["seating_type"],
+                    )
+                messages.success(request, "Venue berhasil ditambahkan.")
+                return redirect(_with_role("events:venue_list", role))
+            except DatabaseError as exc:
+                messages.error(request, _db_error_message(exc))
     else:
-        form = VenueDummyForm()
+        form = VenueForm()
 
-    return render(request, "venue_form.html", {
-        "form": form,
-        "title": "Tambah Venue",
-    })
-
-def _post_object_id(request, key):
-    return request.POST.get(key, "").strip()
+    return render(request, "venue_form.html", {"form": form, "title": "Tambah Venue", "role": role})
 
 def venue_update(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa mengubah venue.")
         return redirect(_with_role("events:venue_list", role))
@@ -330,11 +464,11 @@ def venue_update(request):
 
     venue_id = _post_object_id(request, "venue_id")
     venue = _find_venue(venue_id)
-
     if not venue:
         messages.error(request, "Venue tidak ditemukan.")
         return redirect(_with_role("events:venue_list", role))
 
+    mode = request.POST.get("mode", "open")
     initial = {
         "venue_name": venue.venue_name,
         "capacity": venue.capacity,
@@ -343,26 +477,46 @@ def venue_update(request):
         "seating_type": venue.seating_type,
     }
 
-    mode = request.POST.get("mode", "open")
-
     if mode == "save":
-        form = VenueDummyForm(request.POST)
+        form = VenueForm(request.POST)
         if form.is_valid():
-            messages.success(request, "Simulasi edit venue berhasil.")
-            return redirect(_with_role("events:venue_list", role))
+            try:
+                with transaction.atomic(), connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT sp_update_venue(%s, %s, %s, %s, %s)",
+                        [
+                            venue_id,
+                            form.cleaned_data["venue_name"],
+                            form.cleaned_data["capacity"],
+                            form.cleaned_data["address"],
+                            form.cleaned_data["city"],
+                        ],
+                    )
+                    if (
+                        form.cleaned_data["capacity"] != venue.capacity
+                        or form.cleaned_data["seating_type"] != venue.seating_type
+                    ):
+                        _sync_seats(
+                            cursor,
+                            venue_id,
+                            form.cleaned_data["capacity"],
+                            form.cleaned_data["seating_type"],
+                        )
+                messages.success(request, "Venue berhasil diperbarui.")
+                return redirect(_with_role("events:venue_list", role))
+            except DatabaseError as exc:
+                messages.error(request, _db_error_message(exc))
     else:
-        form = VenueDummyForm(initial=initial)
+        form = VenueForm(initial=initial)
 
-    return render(request, "venue_form.html", {
-        "form": form,
-        "title": "Edit Venue",
-        "venue_id": venue_id,
-        "mode": "save",
-    })
+    return render(
+        request,
+        "venue_form.html",
+        {"form": form, "title": "Edit Venue", "venue_id": venue_id, "mode": "save", "role": role},
+    )
 
 def venue_delete(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa menghapus venue.")
         return redirect(_with_role("events:venue_list", role))
@@ -372,21 +526,23 @@ def venue_delete(request):
 
     venue_id = _post_object_id(request, "venue_id")
     venue = _find_venue(venue_id)
-
     if not venue:
         messages.error(request, "Venue tidak ditemukan.")
         return redirect(_with_role("events:venue_list", role))
 
-    mode = request.POST.get("mode", "open")
+    if request.POST.get("mode") == "confirm":
+        try:
+            with transaction.atomic(), connection.cursor() as cursor:
+                if _table_exists("seat") and "venue_id" in _table_columns("seat"):
+                    cursor.execute("DELETE FROM seat WHERE venue_id = %s", [venue_id])
+                cursor.execute("SELECT sp_delete_venue(%s)", [venue_id])
+            messages.success(request, "Venue berhasil dihapus.")
+            return redirect(_with_role("events:venue_list", role))
+        except DatabaseError as exc:
+            messages.error(request, _db_error_message(exc))
+            return redirect(_with_role("events:venue_list", role))
 
-    if mode == "confirm":
-        messages.success(request, "Simulasi hapus venue berhasil.")
-        return redirect(_with_role("events:venue_list", role))
-
-    return render(request, "venue_confirm_delete.html", {
-        "venue": venue,
-        "venue_id": venue_id,
-    })
+    return render(request, "venue_confirm_delete.html", {"venue": venue, "venue_id": venue_id, "role": role})
 
 def event_list(request):
     role = _current_role(request)
@@ -397,121 +553,163 @@ def event_list(request):
     artist = request.GET.get("artist", "").strip().lower()
 
     if q:
-        events = [
-            e for e in events
-            if q in e.event_title.lower() or q in e.artists.lower()
-        ]
-
+        events = [e for e in events if q in e.event_title.lower() or q in e.artists.lower()]
     if venue_id:
         events = [e for e in events if e.venue and e.venue.venue_id == venue_id]
-
     if artist:
         events = [e for e in events if artist in e.artists.lower()]
 
-    context = {
-        "events": events,
-        "venues": _load_venues(),
-        "role": role,
-    }
-    return render(request, "event_list.html", context)
+    return render(request, "event_list.html", {"events": events, "venues": _load_venues(), "role": role})
 
 def event_manage_list(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Halaman ini hanya untuk admin atau organizer.")
-        return redirect(_with_role("dashboard", role))
+        return redirect(_dashboard_or_event_list(role))
 
-    events = _load_events()
-
-    context = {
-        "events": events,
-    }
-    return render(request, "event_manage_list.html", context)
+    return render(request, "event_manage_list.html", {"events": _load_events(), "role": role})
 
 def event_create(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa membuat event.")
-        return redirect(_with_role("dashboard", role))
+        return redirect(_dashboard_or_event_list(role))
 
+    venues = _load_venues()
     if request.method == "POST":
-        form = EventDummyForm(request.POST)
+        form = EventForm(request.POST, venues=venues)
         formset = TicketCategoryFormSet(request.POST, prefix="ticket_categories")
-
         if form.is_valid() and formset.is_valid():
-            messages.success(request, "Simulasi buat event berhasil.")
-            return redirect(_with_role("events:event_manage_list", role))
+            try:
+                tickets = _clean_ticket_forms(formset)
+                with transaction.atomic(), connection.cursor() as cursor:
+                    event_cols = _table_columns("event")
+                    insert_cols = ["event_id", "event_title", "event_datetime", "venue_id", "organizer_id"]
+                    values_sql = ["gen_random_uuid()", "%s", "%s", "%s", "%s"]
+                    params = [
+                        form.cleaned_data["event_title"],
+                        form.cleaned_data["event_datetime"],
+                        form.cleaned_data["venue"],
+                        _current_organizer_id(request),
+                    ]
+
+                    if "description" in event_cols:
+                        insert_cols.append("description")
+                        values_sql.append("%s")
+                        params.append(form.cleaned_data.get("description") or "")
+                    if "image_url" in event_cols:
+                        insert_cols.append("image_url")
+                        values_sql.append("%s")
+                        params.append(form.cleaned_data.get("image_url") or "")
+
+                    cursor.execute(
+                        f"""
+                        INSERT INTO event ({', '.join(insert_cols)})
+                        VALUES ({', '.join(values_sql)})
+                        RETURNING event_id
+                        """,
+                        params,
+                    )
+                    event_id = cursor.fetchone()[0]
+                    _sync_event_artists(cursor, event_id, form.cleaned_data["artists"])
+                    _sync_ticket_categories(cursor, event_id, tickets)
+
+                messages.success(request, "Event berhasil dibuat.")
+                return redirect(_with_role("events:event_manage_list", role))
+            except DatabaseError as exc:
+                messages.error(request, _db_error_message(exc))
     else:
-        form = EventDummyForm()
+        form = EventForm(venues=venues)
         formset = TicketCategoryFormSet(prefix="ticket_categories")
 
-    return render(request, "event_form.html", {
-        "form": form,
-        "formset": formset,
-        "title": "Buat Event",
-    })
+    return render(request, "event_form.html", {"form": form, "formset": formset, "title": "Buat Event", "role": role})
 
 def event_update(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa mengubah event.")
-        return redirect(_with_role("dashboard", role))
+        return redirect(_dashboard_or_event_list(role))
 
     if request.method != "POST":
         return redirect(_with_role("events:event_manage_list", role))
 
     event_id = _post_object_id(request, "event_id")
     event = _find_event(event_id)
-
     if not event:
         messages.error(request, "Event tidak ditemukan.")
         return redirect(_with_role("events:event_manage_list", role))
 
-    initial_form = {
-        "event_title": event.event_title,
-        "venue": event.venue.venue_id if event.venue else "",
-        "event_datetime": event.event_datetime.strftime("%Y-%m-%dT%H:%M"),
-        "image_url": event.image_url,
-        "artists": event.artists,
-        "description": event.description,
-    }
-
-    initial_formset = [
-        {
-            "category_name": ticket.category_name,
-            "price": int(ticket.price),
-            "quota": ticket.quota,
-        }
-        for ticket in event.ticket_categories.all()
-    ]
-
+    venues = _load_venues()
     mode = request.POST.get("mode", "open")
 
     if mode == "save":
-        form = EventDummyForm(request.POST)
+        form = EventForm(request.POST, venues=venues)
         formset = TicketCategoryFormSet(request.POST, prefix="ticket_categories")
-
         if form.is_valid() and formset.is_valid():
-            messages.success(request, "Simulasi edit event berhasil.")
-            return redirect(_with_role("events:event_manage_list", role))
-    else:
-        form = EventDummyForm(initial=initial_form)
-        formset = TicketCategoryFormSet(initial=initial_formset, prefix="ticket_categories")
+            try:
+                tickets = _clean_ticket_forms(formset)
+                with transaction.atomic(), connection.cursor() as cursor:
+                    event_cols = _table_columns("event")
+                    set_sql = ["event_title = %s", "event_datetime = %s", "venue_id = %s"]
+                    params = [
+                        form.cleaned_data["event_title"],
+                        form.cleaned_data["event_datetime"],
+                        form.cleaned_data["venue"],
+                    ]
+                    if "description" in event_cols:
+                        set_sql.append("description = %s")
+                        params.append(form.cleaned_data.get("description") or "")
+                    if "image_url" in event_cols:
+                        set_sql.append("image_url = %s")
+                        params.append(form.cleaned_data.get("image_url") or "")
+                    params.append(event_id)
 
-    return render(request, "event_form.html", {
-        "form": form,
-        "formset": formset,
-        "title": "Edit Event",
-        "event_id": event_id,
-        "mode": "save",
-    })
+                    cursor.execute(
+                        f"UPDATE event SET {', '.join(set_sql)} WHERE event_id = %s",
+                        params,
+                    )
+                    _sync_event_artists(cursor, event_id, form.cleaned_data["artists"])
+                    _sync_ticket_categories(cursor, event_id, tickets)
+
+                messages.success(request, "Event berhasil diperbarui.")
+                return redirect(_with_role("events:event_manage_list", role))
+            except DatabaseError as exc:
+                messages.error(request, _db_error_message(exc))
+    else:
+        form = EventForm(
+            initial={
+                "event_title": event.event_title,
+                "venue": event.venue.venue_id if event.venue else "",
+                "event_datetime": event.event_datetime.strftime("%Y-%m-%dT%H:%M"),
+                "image_url": event.image_url,
+                "artists": event.artists,
+                "description": event.description,
+            },
+            venues=venues,
+        )
+        formset = TicketCategoryFormSet(
+            initial=[
+                {"category_name": t.category_name, "price": int(t.price), "quota": t.quota}
+                for t in event.ticket_categories.all()
+            ],
+            prefix="ticket_categories",
+        )
+
+    return render(
+        request,
+        "event_form.html",
+        {
+            "form": form,
+            "formset": formset,
+            "title": "Edit Event",
+            "event_id": event_id,
+            "mode": "save",
+            "role": role,
+        },
+    )
 
 def event_delete(request):
     role = _current_role(request)
-
     if not can_manage(role):
         messages.error(request, "Hanya admin atau organizer yang bisa menghapus event.")
         return redirect(_with_role("events:event_manage_list", role))
@@ -521,18 +719,22 @@ def event_delete(request):
 
     event_id = _post_object_id(request, "event_id")
     event = _find_event(event_id)
-
     if not event:
         messages.error(request, "Event tidak ditemukan.")
         return redirect(_with_role("events:event_manage_list", role))
 
-    mode = request.POST.get("mode", "open")
+    if request.POST.get("mode") == "confirm":
+        try:
+            with transaction.atomic(), connection.cursor() as cursor:
+                if _table_exists("ticket_category"):
+                    cursor.execute("DELETE FROM ticket_category WHERE event_id = %s", [event_id])
+                if _table_exists("event_artist"):
+                    cursor.execute("DELETE FROM event_artist WHERE event_id = %s", [event_id])
+                cursor.execute("DELETE FROM event WHERE event_id = %s", [event_id])
+            messages.success(request, "Event berhasil dihapus.")
+            return redirect(_with_role("events:event_manage_list", role))
+        except DatabaseError as exc:
+            messages.error(request, _db_error_message(exc))
+            return redirect(_with_role("events:event_manage_list", role))
 
-    if mode == "confirm":
-        messages.success(request, "Event berhasil dihapus.")
-        return redirect(_with_role("events:event_manage_list", role))
-
-    return render(request, "event_confirm_delete.html", {
-        "event": event,
-        "event_id": event_id,
-    })
+    return render(request, "event_confirm_delete.html", {"event": event, "event_id": event_id, "role": role})

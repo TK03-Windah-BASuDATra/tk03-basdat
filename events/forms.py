@@ -1,57 +1,65 @@
 from django import forms
-from django.forms import inlineformset_factory
-from .models import Venue, Event, TicketCategory
+from django.forms import formset_factory
 
-
-class VenueForm(forms.ModelForm):
-    class Meta:
-        model = Venue
-        fields = ['venue_name', 'capacity', 'city', 'address', 'seating_type']
-        widgets = {
-            'venue_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'city': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'seating_type': forms.Select(attrs={'class': 'form-select'}),
-        }
-
-class EventForm(forms.ModelForm):
-    class Meta:
-        model = Event
-        fields = ['event_title', 'event_datetime', 'venue', 'artists', 'description', 'image_url']
-        widgets = {
-            'event_title': forms.TextInput(attrs={'class': 'form-control'}),
-            'event_datetime': forms.DateTimeInput(
-                attrs={'class': 'form-control', 'type': 'datetime-local'},
-                format='%Y-%m-%dT%H:%M'
-            ),
-            'venue': forms.Select(attrs={'class': 'form-select'}),
-            'artists': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'image_url': forms.URLInput(attrs={'class': 'form-control'}),
-        }
+class VenueForm(forms.Form):
+    venue_name = forms.CharField(label="Nama Venue", max_length=100)
+    capacity = forms.IntegerField(label="Kapasitas", min_value=1)
+    city = forms.CharField(label="Kota", max_length=100)
+    address = forms.CharField(label="Alamat", widget=forms.Textarea(attrs={"rows": 3}))
+    seating_type = forms.ChoiceField(
+        label="Tipe Seating",
+        choices=[("reserved", "Reserved Seating"), ("free", "Free Seating")],
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['event_datetime'].input_formats = ['%Y-%m-%dT%H:%M']
+        for name, field in self.fields.items():
+            if name == "seating_type":
+                field.widget.attrs.update({"class": "form-select"})
+            else:
+                field.widget.attrs.update({"class": "form-control"})
 
+class EventForm(forms.Form):
+    event_title = forms.CharField(label="Judul Event", max_length=200)
+    venue = forms.ChoiceField(label="Venue")
+    event_datetime = forms.DateTimeField(
+        label="Tanggal & Waktu Event",
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"}),
+    )
+    image_url = forms.URLField(label="Image URL", required=False)
+    artists = forms.CharField(label="Artis", max_length=255)
+    description = forms.CharField(
+        label="Deskripsi",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
 
-class TicketCategoryForm(forms.ModelForm):
-    class Meta:
-        model = TicketCategory
-        fields = ['category_name', 'price', 'quota']
-        widgets = {
-            'category_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'quota': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-        }
+    def __init__(self, *args, venues=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        venues = venues or []
+        self.fields["venue"].choices = [(v.venue_id, v.venue_name) for v in venues]
+        for name, field in self.fields.items():
+            if name == "venue":
+                field.widget.attrs.update({"class": "form-select"})
+            elif name not in ["event_datetime"]:
+                field.widget.attrs.update({"class": "form-control"})
 
-TicketCategoryFormSet = inlineformset_factory(
-    Event,
-    TicketCategory,
-    form=TicketCategoryForm,
+class TicketCategoryForm(forms.Form):
+    category_name = forms.CharField(label="Nama Kategori", max_length=100)
+    price = forms.IntegerField(label="Harga", min_value=0)
+    quota = forms.IntegerField(label="Kuota", min_value=1)
+    DELETE = forms.BooleanField(label="Hapus", required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name == "DELETE":
+                continue
+            field.widget.attrs.update({"class": "form-control"})
+
+TicketCategoryFormSet = formset_factory(
+    TicketCategoryForm,
     extra=1,
     can_delete=True,
-    min_num=1,
-    validate_min=True
 )
