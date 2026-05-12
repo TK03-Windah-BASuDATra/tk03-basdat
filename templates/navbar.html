@@ -70,7 +70,7 @@
               <li><a class="dropdown-item" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
               <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'dashboard' %}?role={{ role }}">Order</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}{% if request.session.username %}&username={{ request.session.username }}{% endif %}">Order</a></li>
               <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
             </ul>
           </li>

@@ -221,7 +221,8 @@
           {% endfor %}
         {% endif %}
 
-        <form method="post" id="checkoutForm">
+        <form method="post" id="checkoutForm"
+              action="?role={{ role }}&username={{ username }}">
           {% csrf_token %}
 
           <!-- Pilih Kategori Tiket -->
@@ -230,18 +231,18 @@
 
           {% for cat in categories %}
             {# Gunakan category_id (konsisten dengan views.py) #}
-            <label class="category-item {% if forloop.first %}selected{% endif %}"
+            <label class="category-item {% if selected_category_id == cat.category_id|stringformat:'s' %}selected{% elif not selected_category_id and forloop.first %}selected{% endif %}"
                    id="cat-label-{{ cat.category_id }}"
                    onclick="selectCategory(this, '{{ cat.category_id }}', {{ cat.price }})">
               <input type="radio" name="category_id" value="{{ cat.category_id }}"
-                     {% if forloop.first %}checked{% endif %}>
+                     {% if selected_category_id == cat.category_id|stringformat:'s' %}checked{% elif not selected_category_id and forloop.first %}checked{% endif %}>
               <div>
                 <div class="cat-name">{{ cat.category_name }}</div>
                 <div class="cat-quota">Kuota: {{ cat.quota }} tiket</div>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="cat-price">Rp {{ cat.price|floatformat:0 }}</span>
-                <div class="check-icon {% if not forloop.first %}d-none{% endif %}"
+                <div class="check-icon {% if selected_category_id == cat.category_id|stringformat:'s' %}{% elif not selected_category_id and forloop.first %}{% else %}d-none{% endif %}"
                      id="check-{{ cat.category_id }}">
                   <i class="bi bi-check"></i>
                 </div>
@@ -261,7 +262,7 @@
                 <div class="d-flex align-items-center gap-2">
                   <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
                   <input type="number" name="quantity" id="qtyInput"
-                         class="qty-input" value="2" min="1" max="10">
+                         class="qty-input" value="{{ selected_quantity|default:'1' }}" min="1" max="10">
                   <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                 </div>
                 <div style="font-size:0.73rem; color:#94a3b8; margin-top:8px;">
@@ -280,7 +281,7 @@
                             class="seat-btn"
                             onclick="toggleSeat(this, '{{ seat.seat_id }}')"
                             data-seat-id="{{ seat.seat_id }}">
-                      {{ seat.row_number }}{{ seat.seat_number|slice:"1:" }}
+                      {{ seat.seat_label }}
                     </button>
                   {% empty %}
                     <span style="font-size:0.8rem; color:#94a3b8;">
@@ -338,6 +339,10 @@
           <span id="summaryLabel">-</span>
           <span id="summarySubtotal">Rp 0</span>
         </div>
+        <div class="summary-row mb-2" id="discountRow" style="display:none !important;">
+          <span id="discountLabel" style="color:#22c55e;">Diskon</span>
+          <span id="discountAmount" style="color:#22c55e;">- Rp 0</span>
+        </div>
         <div class="summary-row mb-3">
           <span>Biaya Layanan</span>
           <span>Rp 0</span>
@@ -383,8 +388,12 @@
   let selectedCategoryPrice = 0;
   let selectedCategoryName  = '';
 
-  // Default: kategori pertama (termahal, sesuai ORDER BY price DESC)
-  {% if categories %}
+  // Restore dari server jika ada (setelah apply_promo POST), fallback ke kategori pertama
+  {% if selected_category_id and categories %}
+    selectedCategoryId    = "{{ selected_category_id }}";
+    selectedCategoryPrice = categories["{{ selected_category_id }}"] ? categories["{{ selected_category_id }}"].price : 0;
+    selectedCategoryName  = categories["{{ selected_category_id }}"] ? categories["{{ selected_category_id }}"].name  : '';
+  {% elif categories %}
     selectedCategoryId    = "{{ categories.0.category_id }}";
     selectedCategoryPrice = {{ categories.0.price }};
     selectedCategoryName  = "{{ categories.0.category_name }}";
@@ -416,10 +425,20 @@
     if (val < 1)  val = 1;
     if (val > 10) val = 10;
     input.value = val;
+    syncSeatsToQty();
     updateSummary();
   }
 
-  document.getElementById('qtyInput').addEventListener('input', updateSummary);
+  document.getElementById('qtyInput').addEventListener('input', () => {
+    syncSeatsToQty();
+    updateSummary();
+  });
+
+  // ── Data promo dari Django (diisi server setelah apply_promo berhasil) ──
+  const promoObj = {% if promo_obj %}{
+    type:  "{{ promo_obj.type }}",
+    value: {{ promo_obj.value }}
+  }{% else %}null{% endif %};
 
   // ── Update ringkasan ───────────────────────────────────────────────
   function updateSummary() {
@@ -428,24 +447,71 @@
 
     document.getElementById('summaryLabel').textContent =
       (selectedCategoryName || 'Kategori') + ' × ' + qty;
+    document.getElementById('summarySubtotal').textContent =
+      'Rp ' + subtotal.toLocaleString('id-ID');
 
-    const formatted = 'Rp ' + subtotal.toLocaleString('id-ID');
-    document.getElementById('summarySubtotal').textContent = formatted;
-    document.getElementById('summaryTotal').textContent    = formatted;
+    // Hitung diskon jika promo valid
+    let discount = 0;
+    const discountRow = document.getElementById('discountRow');
+    if (promoObj) {
+      if (promoObj.type === 'PERCENTAGE') {
+        discount = subtotal * (promoObj.value / 100);
+        document.getElementById('discountLabel').textContent =
+          'Diskon (' + promoObj.value + '%)';
+      } else {
+        discount = promoObj.value;
+        document.getElementById('discountLabel').textContent = 'Diskon';
+      }
+      discount = Math.min(discount, subtotal); // tidak melebihi subtotal
+      document.getElementById('discountAmount').textContent =
+        '- Rp ' + discount.toLocaleString('id-ID');
+      discountRow.style.setProperty('display', 'flex', 'important');
+    } else {
+      discountRow.style.setProperty('display', 'none', 'important');
+    }
+
+    const total = Math.max(subtotal - discount, 0);
+    document.getElementById('summaryTotal').textContent =
+      'Rp ' + total.toLocaleString('id-ID');
   }
 
-  // ── Toggle pilih kursi ─────────────────────────────────────────────
-  const selectedSeatIds = new Set();
+  // ── Toggle pilih kursi (FIFO, maks = jumlah tiket) ───────────────
+  // selectedSeatIds adalah array berurutan (FIFO): kursi pertama dipilih = index 0
+  const selectedSeatIds = [];
 
   function toggleSeat(btn, seatId) {
-    btn.classList.toggle('selected');
-    if (selectedSeatIds.has(seatId)) {
-      selectedSeatIds.delete(seatId);
+    const idx = selectedSeatIds.indexOf(seatId);
+    if (idx !== -1) {
+      // Kursi sudah dipilih → batalkan pilihan
+      selectedSeatIds.splice(idx, 1);
+      btn.classList.remove('selected');
     } else {
-      selectedSeatIds.add(seatId);
+      const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+      if (selectedSeatIds.length >= qty) {
+        // Sudah penuh → keluarkan kursi pertama (FIFO) dan deselect tombolnya
+        const evictedId = selectedSeatIds.shift();
+        const evictedBtn = document.querySelector(
+          `.seat-btn[data-seat-id="${evictedId}"]`
+        );
+        if (evictedBtn) evictedBtn.classList.remove('selected');
+      }
+      selectedSeatIds.push(seatId);
+      btn.classList.add('selected');
     }
-    document.getElementById('selectedSeats').value =
-      Array.from(selectedSeatIds).join(',');
+    document.getElementById('selectedSeats').value = selectedSeatIds.join(',');
+  }
+
+  // Saat quantity berubah, hapus kursi terpilih yang melebihi jumlah baru
+  function syncSeatsToQty() {
+    const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+    while (selectedSeatIds.length > qty) {
+      const evictedId = selectedSeatIds.shift();
+      const evictedBtn = document.querySelector(
+        `.seat-btn[data-seat-id="${evictedId}"]`
+      );
+      if (evictedBtn) evictedBtn.classList.remove('selected');
+    }
+    document.getElementById('selectedSeats').value = selectedSeatIds.join(',');
   }
 
   // ── Init saat load ─────────────────────────────────────────────────
