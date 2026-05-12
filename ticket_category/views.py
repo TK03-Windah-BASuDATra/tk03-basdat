@@ -2,6 +2,7 @@ import json
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, Http404
 from django.db import connection
+from django.contrib import messages
 from django.views.decorators.http import require_POST, require_GET
 
 
@@ -87,6 +88,7 @@ def ticket_category_create(request):
                 "INSERT INTO ticket_category (event_id, category_name, price, quota) VALUES (%s, %s, %s, %s)",
                 [event_id, category_name, price, quota]
             )
+        messages.success(request, 'Kategori tiket berhasil ditambahkan.')
 
     return redirect(f'/ticket-category/?role={role}')
 
@@ -133,6 +135,7 @@ def ticket_category_edit(request, pk):
                 SET event_id = %s, category_name = %s, price = %s, quota = %s
                 WHERE category_id = %s
             """, [event_id, category_name, price, quota, pk])
+        messages.success(request, 'Kategori tiket berhasil diperbarui.')
 
     return redirect(f'/ticket-category/?role={role}')
 
@@ -145,5 +148,6 @@ def ticket_category_delete(request, pk):
 
     with connection.cursor() as cur:
         cur.execute("DELETE FROM ticket_category WHERE category_id = %s", [pk])
+    messages.success(request, 'Kategori tiket berhasil dihapus.')
 
     return redirect(f'/ticket-category/?role={role}')

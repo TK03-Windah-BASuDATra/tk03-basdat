@@ -34,14 +34,12 @@ function populateAcaraSelect() {
   ]);
   const opts = Array.from(acaraSet).sort();
 
-  // filter dropdown
   const filterSel = document.getElementById('acaraFilter');
   const prevFilter = filterSel.value;
   filterSel.innerHTML = '<option value="all">Semua Acara</option>' +
     opts.map(a => `<option value="${escHtml(a)}">${escHtml(a)}</option>`).join('');
   filterSel.value = prevFilter;
 
-  // form dropdown
   const formSel = document.getElementById('fAcara');
   const prevForm = formSel.value;
   formSel.innerHTML = '<option value="">Pilih acara</option>' +
@@ -143,7 +141,6 @@ function openCreate() {
   document.getElementById('fHarga').value    = '';
   document.getElementById('fKuota').value    = '';
   document.getElementById('ticketForm').action = CREATE_URL;
-  // hidden event_id kosongkan
   document.getElementById('fEventId').value = '';
   clearErrors();
   document.getElementById('formOverlay').classList.add('show');
@@ -156,7 +153,6 @@ function openEdit(id) {
       document.getElementById('modalTitle').textContent = 'Edit Kategori Tiket';
       document.getElementById('submitBtn').textContent  = 'Simpan Perubahan';
       populateAcaraSelect();
-      // set hidden event_id
       document.getElementById('fEventId').value  = k.event_id;
       document.getElementById('fKategori').value = k.kategori;
       document.getElementById('fHarga').value    = k.harga;
@@ -174,7 +170,7 @@ function closeForm() {
 function clearErrors() {
   ['Acara','Kategori','Harga','Kuota'].forEach(f => {
     const el = document.getElementById('err' + f);
-    if (el) el.textContent = '';
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
   });
 }
 
@@ -185,10 +181,18 @@ function validateForm() {
   const harga    = Number(document.getElementById('fHarga').value);
   const kuota    = Number(document.getElementById('fKuota').value);
   let valid = true;
-  if (!eventId)             { document.getElementById('errAcara').textContent    = 'Acara wajib dipilih'; valid = false; }
-  if (!kategori)            { document.getElementById('errKategori').textContent = 'Nama kategori wajib diisi'; valid = false; }
-  if (!harga || harga <= 0) { document.getElementById('errHarga').textContent    = 'Harga harus > 0'; valid = false; }
-  if (!kuota || kuota <= 0) { document.getElementById('errKuota').textContent    = 'Kuota harus > 0'; valid = false; }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  if (!eventId)             { showErr('errAcara',   'Acara wajib dipilih');          valid = false; }
+  if (!kategori)            { showErr('errKategori', 'Nama kategori wajib diisi');    valid = false; }
+  if (!harga || harga <= 0) { showErr('errHarga',    'Harga harus lebih dari 0');     valid = false; }
+  if (!kuota || kuota <= 0) { showErr('errKuota',    'Kuota harus lebih dari 0');     valid = false; }
+
   return valid;
 }
 
@@ -204,6 +208,7 @@ function closeDelete() {
   document.getElementById('deleteOverlay').classList.remove('show');
 }
 
+// ── INIT ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.body.appendChild(document.getElementById('formOverlay'));
   document.body.appendChild(document.getElementById('deleteOverlay'));

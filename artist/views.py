@@ -2,21 +2,19 @@ import json
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, Http404
 from django.db import connection
+from django.contrib import messages
 from django.views.decorators.http import require_POST, require_GET
 
 def _get_role(request):
-    """Mengambil role dari query parameter, default ke 'customer'."""
     role = request.GET.get('role', 'customer')
     if role not in ('admin', 'organizer', 'customer'):
         role = 'customer'
     return role
 
 def _can_manage(role):
-    """Hanya Admin yang punya akses CRUD Artist sesuai spesifikasi."""
     return role == 'admin'
 
 def validate_artist(nama, genre):
-    """Validasi input artist."""
     errors = {}
     nama = (nama or "").strip()
     genre = (genre or "").strip()
@@ -31,25 +29,22 @@ def validate_artist(nama, genre):
 @require_GET
 def artist_list(request):
     role = _get_role(request)
-    
+
     with connection.cursor() as cur:
-        # Query untuk mengambil data artis sekaligus jumlah event yang diikuti
         cur.execute('''
-            SELECT 
-                a.artist_id as id, 
-                a.name as nama, 
-                a.genre, 
+            SELECT
+                a.artist_id as id,
+                a.name as nama,
+                a.genre,
                 COUNT(ea.event_id) as tampil
             FROM windah_basudatra.artist a
             LEFT JOIN windah_basudatra.event_artist ea ON a.artist_id = ea.artist_id
             GROUP BY a.artist_id, a.name, a.genre
             ORDER BY a.name ASC
         ''')
-        
         columns = [col[0] for col in cur.description]
         artists = [dict(zip(columns, row)) for row in cur.fetchall()]
 
-    # Hitung statistik untuk Stat Cards
     genres = {a['genre'] for a in artists if a['genre'] and a['genre'] != 'Lainnya'}
     total_tampil = sum(a['tampil'] for a in artists)
 
@@ -79,22 +74,22 @@ def artist_create(request):
                 INSERT INTO windah_basudatra.artist (name, genre)
                 VALUES (%s, %s)
             ''', [nama, genre])
-    
+        messages.success(request, 'Artis berhasil ditambahkan.')
+
     return redirect(f'/artist/?role={role}')
 
 @require_GET
 def artist_data(request, pk):
-    """Endpoint JSON untuk mengisi data di Modal Edit."""
     with connection.cursor() as cur:
         cur.execute('''
-            SELECT artist_id as id, name as nama, genre 
-            FROM windah_basudatra.artist 
+            SELECT artist_id as id, name as nama, genre
+            FROM windah_basudatra.artist
             WHERE artist_id = %s
         ''', [pk])
         row = cur.fetchone()
         if not row:
             return JsonResponse({'error': 'Not found'}, status=404)
-        
+
         return JsonResponse({
             'id': str(row[0]),
             'nama': row[1],
@@ -118,6 +113,7 @@ def artist_edit(request, pk):
                 SET name = %s, genre = %s
                 WHERE artist_id = %s
             ''', [nama, genre, pk])
+        messages.success(request, 'Artis berhasil diperbarui.')
 
     return redirect(f'/artist/?role={role}')
 
@@ -128,9 +124,11 @@ def artist_delete(request, pk):
         return redirect(f'/artist/?role={role}')
 
     with connection.cursor() as cur:
-        # Proteksi: Cek apakah artis sedang dipakai di event_artist
         cur.execute('SELECT COUNT(*) FROM windah_basudatra.event_artist WHERE artist_id = %s', [pk])
         if cur.fetchone()[0] == 0:
             cur.execute('DELETE FROM windah_basudatra.artist WHERE artist_id = %s', [pk])
+            messages.success(request, 'Artis berhasil dihapus.')
+        else:
+            messages.error(request, 'Artis tidak dapat dihapus karena masih terdaftar di event.')
 
     return redirect(f'/artist/?role={role}')
