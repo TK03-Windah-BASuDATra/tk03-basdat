@@ -195,7 +195,6 @@ def add_role_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        # ── BACK ─────────────────────────────────────────────
         if request.POST.get('action') == 'back':
             back_to = int(request.POST.get('back_to', 1))
             if back_to == 1:
@@ -208,7 +207,6 @@ def add_role_view(request):
 
         current_step = int(request.POST.get('step', 1))
 
-        # ── STEP 1 ──────────────────────────────────────────
         if current_step == 1:
             username = request.POST.get('username', '').strip()
             password1 = request.POST.get('password1', '').strip()
@@ -216,7 +214,6 @@ def add_role_view(request):
             agree_terms = request.POST.get('agree_terms')
             errors = {}
 
-            # basic validation
             if not username:
                 errors['username'] = 'Username wajib diisi.'
             if not password1:
@@ -226,10 +223,9 @@ def add_role_view(request):
             if not agree_terms:
                 errors['agree_terms'] = 'Anda harus menyetujui Syarat & Ketentuan.'
 
-            # VALIDASI USER EXISTING DI SINI
             existing_user_id = None
 
-            if username and password1:
+            if username and password1 and not errors:
                 with connection.cursor() as cur:
                     cur.execute(
                         'SELECT user_id, password FROM user_account WHERE username = %s',
@@ -237,14 +233,13 @@ def add_role_view(request):
                     )
                     row = cur.fetchone()
 
-                    if row:
+                    if not row:
+                        errors['username'] = 'Akun dengan username ini tidak ditemukan.'
+                    else:
                         existing_user_id, existing_password = str(row[0]), row[1]
-
-                        # password salah -> STOP di step 1
                         if existing_password != password1:
                             errors['password1'] = 'Password tidak cocok dengan akun yang sudah ada.'
 
-            # kalau ada error -> stop
             if errors:
                 return render(request, 'register.html', {
                     'step': 1,
@@ -253,19 +248,16 @@ def add_role_view(request):
                     'page_title': 'Tambah Role'
                 })
 
-            # simpan session
             request.session['reg_username'] = username
             request.session['reg_password'] = password1
             request.session['reg_existing_user_id'] = existing_user_id
             request.session['reg_step'] = 2
 
-            # kalau user lama → kasih info
             if existing_user_id:
                 messages.info(request, "Akun ditemukan. Anda akan menambahkan role baru.")
 
             return render(request, 'register.html', {'step': 2, 'page_title': 'Tambah Role'})
 
-        # ── STEP 2 ──────────────────────────────────────────
         elif current_step == 2:
             role = request.POST.get('role', '')
             if role not in ('customer', 'organizer', 'admin'):
@@ -275,13 +267,11 @@ def add_role_view(request):
                     'page_title': 'Tambah Role'
                 })
 
-            username = request.session.get('reg_username')
             role_name = ROLE_NAME_MAP[role]
             existing_user_id = request.session.get('reg_existing_user_id')
             prefill = None
 
             with connection.cursor() as cur:
-                # kalau user lama → cek role sudah ada atau belum
                 if existing_user_id:
                     cur.execute(
                         """
@@ -298,7 +288,6 @@ def add_role_view(request):
                             'page_title': 'Tambah Role'
                         })
 
-                    # prefill data
                     if role != 'admin':
                         cur.execute(
                             'SELECT full_name, contact_email, phone_number FROM customer WHERE user_id = %s',
@@ -333,7 +322,6 @@ def add_role_view(request):
                 'page_title': 'Tambah Role'
             })
 
-        # ── STEP 3 ──────────────────────────────────────────
         elif current_step == 3:
             role = request.session.get('reg_role')
             is_admin = role == 'admin'
@@ -375,7 +363,6 @@ def add_role_view(request):
             _clear_reg_session(request)
             return render(request, 'register.html', {'step': 4, 'page_title': 'Tambah Role'})
 
-    # GET
     _clear_reg_session(request)
     return render(request, 'register.html', {'step': 1, 'page_title': 'Tambah Role'})
 
