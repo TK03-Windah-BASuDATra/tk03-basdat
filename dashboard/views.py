@@ -1,16 +1,16 @@
 from django.db import connection
 from django.shortcuts import render
-
-# Create your views here.
 from datetime import date
+
 
 def _format_omzet(n):
     if n >= 1_000_000:
         return f"Rp {n/1_000_000:.1f}M"
     return f"Rp {n:,.0f}".replace(',', '.')
 
+
 def dashboard(request):
-    role = request.GET.get('role', 'guest')
+    role = request.GET.get('role', request.session.get('role', 'guest'))
     if role not in ('admin', 'organizer', 'customer'):
         role = 'guest'
 
@@ -23,7 +23,9 @@ def dashboard(request):
     else:
         context = dashboard_guest(request)
 
+    context['role'] = role
     return render(request, 'dashboard.html', context)
+
 
 def dashboard_admin(request):
     today = date.today()
@@ -80,14 +82,21 @@ def dashboard_admin(request):
         'total_penggunaan_promo': total_penggunaan_promo,
     }
 
+
 def dashboard_organizer(request):
-    # sementara pakai organizer pertama karena belum ada session
-    organizer_id = request.GET.get('organizer_id', '30000000-0000-0000-0000-000000000001')
+    user_id = request.session.get('user_id')
 
     with connection.cursor() as cur:
-        cur.execute("SELECT organizer_name FROM organizer WHERE organizer_id = %s", [organizer_id])
+        cur.execute(
+            'SELECT organizer_id, organizer_name FROM organizer WHERE user_id = %s',
+            [user_id]
+        )
         row = cur.fetchone()
-        organizer_name = row[0] if row else 'Penyelenggara'
+        if not row:
+            return {'organizer_name': 'Penyelenggara', 'acara_aktif': 0,
+                    'tiket_terjual': '0', 'revenue': 'Rp 0', 'venue_mitra': 0,
+                    'events_organizer': []}
+        organizer_id, organizer_name = str(row[0]), row[1]
 
         cur.execute("SELECT COUNT(*) FROM event WHERE organizer_id = %s", [organizer_id])
         acara_aktif = cur.fetchone()[0]
@@ -150,15 +159,22 @@ def dashboard_organizer(request):
         'events_organizer': events_raw,
     }
 
+
 def dashboard_customer(request):
-    # sementara pakai customer pertama karena belum ada session
-    customer_id = request.GET.get('customer_id', '20000000-0000-0000-0000-000000000001')
+    user_id = request.session.get('user_id')
     today = date.today()
 
     with connection.cursor() as cur:
-        cur.execute("SELECT full_name FROM customer WHERE customer_id = %s", [customer_id])
+        cur.execute(
+            'SELECT customer_id, full_name FROM customer WHERE user_id = %s',
+            [user_id]
+        )
         row = cur.fetchone()
-        customer_name = row[0] if row else 'Customer'
+        if not row:
+            return {'customer_name': 'Customer', 'upcoming_count': 0,
+                    'tiket_aktif': 0, 'acara_diikuti': 0, 'kode_promo': 0,
+                    'total_belanja': 'Rp 0', 'tiket_mendatang': []}
+        customer_id, customer_name = str(row[0]), row[1]
 
         cur.execute("""
             SELECT COUNT(DISTINCT e.event_id)
@@ -227,7 +243,6 @@ def dashboard_customer(request):
         'total_belanja': total_belanja,
         'tiket_mendatang': tiket_mendatang,
     }
-
 
 
 def dashboard_guest(request):

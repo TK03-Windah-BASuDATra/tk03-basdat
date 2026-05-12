@@ -9,11 +9,18 @@ RESET & BASE
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-   font-family: 'Inter', sans-serif;
-   background: #f4f6f9;
-   color: #111827;
-   min-height: 100vh;
-   font-size: 14px;
+  font-family: 'Inter', sans-serif !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.page-header,
+.stats,
+.toolbar,
+.table-card,
+.ticket-grid,
+.ak-modal {
+  font-size: 14px;
 }
 
 :root {

@@ -17,12 +17,20 @@
   --shadow-md: 0 10px 28px rgba(0,0,0,.08);
 }
 
-body {
-  font-family: 'Inter', sans-serif !important;
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  font-size: 14px;
-}
+  body {
+    font-family: 'Inter', sans-serif !important;
+    background: var(--bg) !important;
+    color: var(--text) !important;
+  }
+
+  .page-header,
+  .stats,
+  .toolbar,
+  .table-card,
+  .ticket-grid,
+  .ak-modal {
+    font-size: 14px;
+  }
 
 /* ── PAGE LAYOUT ── */
 .page { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
@@ -91,7 +99,6 @@ body {
 .btn-danger-outline { color: #ef4444 !important; border-color: #fecaca !important; }
 .btn-danger-outline:hover { background: #fff5f5 !important; }
 
-/* ── MODAL & OVERLAY ── */
 /* ── MODAL & OVERLAY ── */
 .ak-overlay {
   display: none; position: fixed; inset: 0;
