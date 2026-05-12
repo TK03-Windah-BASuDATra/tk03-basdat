@@ -32,7 +32,10 @@ def _get_role(request):
     return role if role in VALID_ROLES else "guest"
 
 def _get_username(request):
-    return _get_param(request, "username", "")
+    username = _get_param(request, "username", "")
+    if username:
+        return username
+    return request.session.get("username", "")
 
 def _build_url(name, role="guest", username="", *args):
     url = reverse(name, args=args)
@@ -97,7 +100,8 @@ def checkout(request, event_id):
                 e.event_title,
                 e.event_datetime,
                 v.venue_name,
-                v.venue_id
+                v.venue_id,
+                v.tipe_seating
             FROM windah_basudatra.event e
             JOIN windah_basudatra.venue v ON e.venue_id = v.venue_id
             WHERE e.event_id = %s
@@ -111,11 +115,13 @@ def checkout(request, event_id):
         return redirect(_build_url("events:event_list", role, username))
 
     event = {
-        "event_id": str(row[0]),
-        "event_title": row[1],
+        "event_id":       str(row[0]),
+        "event_title":    row[1],
         "event_datetime": row[2].strftime("%Y-%m-%d · %H:%M") if row[2] else "-",
-        "venue_name": row[3],
-        "venue_id": str(row[4]),
+        "event_date_raw": row[2],
+        "venue_name":     row[3],
+        "venue_id":       str(row[4]),
+        "tipe_seating":   row[5],
     }
 
     # ── Artists ────────────────────────────────
@@ -136,11 +142,7 @@ def checkout(request, event_id):
     with connection.cursor() as cur:
         cur.execute(
             """
-            SELECT
-                category_id,
-                category_name,
-                quota,
-                price
+            SELECT category_id, category_name, quota, price
             FROM windah_basudatra.ticket_category
             WHERE event_id = %s AND quota > 0
             ORDER BY price DESC
@@ -154,71 +156,276 @@ def checkout(request, event_id):
         cat["category_id"] = str(cat["category_id"])
         cat["price"] = float(cat["price"])
 
-    # ── Seats ──────────────────────────────────
-    with connection.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                seat_id,
-                section,
-                seat_number,
-                row_number,
-                row_number || CAST(LTRIM(seat_number, 'S')::integer AS TEXT) AS seat_label
-            FROM windah_basudatra.seat
-            WHERE venue_id = %s
-            ORDER BY section, row_number, seat_number
-            """,
-            [event["venue_id"]],
-        )
-        cols = [c[0] for c in cur.description]
-        seats = [dict(zip(cols, r)) for r in cur.fetchall()]
+    # ── Seats (hanya untuk RESERVED_SEATING) ───
+    seats = []
+    if event["tipe_seating"] == "RESERVED_SEATING":
+        with connection.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    seat_id,
+                    section,
+                    seat_number,
+                    row_number,
+                    row_number || CAST(LTRIM(seat_number, 'S')::integer AS TEXT) AS seat_label
+                FROM windah_basudatra.seat
+                WHERE venue_id = %s
+                ORDER BY section, row_number, seat_number
+                """,
+                [event["venue_id"]],
+            )
+            cols = [c[0] for c in cur.description]
+            seats = [dict(zip(cols, r)) for r in cur.fetchall()]
 
-    for seat in seats:
-        seat["seat_id"] = str(seat["seat_id"])
+        for seat in seats:
+            seat["seat_id"] = str(seat["seat_id"])
 
-    promo_error = None
+    promo_error   = None
     promo_success = None
+    promo_code    = request.POST.get("promo_code", "").strip()
+    promo_obj     = None  # menyimpan data promo valid
+    selected_category_id = request.POST.get("category_id", "").strip()
+    selected_quantity    = request.POST.get("quantity", "1").strip()
 
     if request.method == "POST":
-        if "apply_promo" in request.POST:
-            promo_code = request.POST.get("promo_code", "").strip()
 
+        if "apply_promo" in request.POST:
+            if promo_code:
+                with connection.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT p.promotion_id, p.promo_code, p.discount_type,
+                               p.discount_value, p.usage_limit,
+                               COUNT(op.order_promotion_id) AS used_count,
+                               p.start_date, p.end_date
+                        FROM windah_basudatra.promotion p
+                        LEFT JOIN windah_basudatra.order_promotion op
+                               ON op.promotion_id = p.promotion_id
+                        WHERE p.promo_code = %s
+                        GROUP BY p.promotion_id
+                        """,
+                        [promo_code],
+                    )
+                    promo_row = cur.fetchone()
+
+                if not promo_row:
+                    promo_error = f'ERROR: Promotion dengan kode "{promo_code}" tidak ditemukan.'
+                else:
+                    p_id, p_code, p_type, p_value, p_limit, p_used, p_start, p_end = promo_row
+                    if p_used >= p_limit:
+                        promo_error = f'ERROR: Promotion "{p_code}" telah mencapai batas maksimum penggunaan.'
+                    else:
+                        event_date = event["event_date_raw"].date() if event["event_date_raw"] else None
+                        if event_date and not (p_start <= event_date <= p_end):
+                            promo_error = f'ERROR: Promotion "{p_code}" tidak berlaku untuk tanggal event ini ({event_date}, berlaku {p_start} s.d. {p_end}).'
+                        else:
+                            promo_obj = {
+                                "promotion_id": str(p_id),
+                                "promo_code":   p_code,
+                                "type":         p_type,
+                                "value":        float(p_value),
+                            }
+                            if p_type == "PERCENTAGE":
+                                promo_success = f'Promo "{p_code}" valid! Diskon {float(p_value):.0f}%.'
+                            else:
+                                promo_success = f'Promo "{p_code}" valid! Diskon Rp {float(p_value):,.0f}.'
+            else:
+                promo_error = "Masukkan kode promo terlebih dahulu."
+
+        elif "place_order" in request.POST:
+            # Ambil data form
+            category_id = request.POST.get("category_id", "").strip()
+            quantity    = int(request.POST.get("quantity", 1))
+            seat_ids    = request.POST.get("seat_ids", "").strip()
+            promo_code_final = request.POST.get("promo_code", "").strip()
+
+            # Ambil customer_id dari username — di luar transaksi agar error jelas
             with connection.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT promotion_id, discount_type, discount_value
-                    FROM windah_basudatra.promotion
-                    WHERE promo_code = %s
-                      AND start_date <= CURRENT_DATE
-                      AND end_date   >= CURRENT_DATE
+                    SELECT c.customer_id
+                    FROM windah_basudatra.customer c
+                    JOIN windah_basudatra.user_account u ON u.user_id = c.user_id
+                    WHERE u.username = %s
                     """,
-                    [promo_code],
+                    [username],
                 )
-                promo = cur.fetchone()
+                cust_row = cur.fetchone()
 
-            if promo:
-                discount_type = promo[1]
-                discount_value = float(promo[2])
-
-                if discount_type == "PERCENTAGE":
-                    promo_success = f'Promo "{promo_code}" valid! Diskon {discount_value:.0f}%.'
+            if not cust_row:
+                if not username:
+                    messages.error(request, "Sesi tidak valid, silakan login ulang.")
                 else:
-                    promo_error = 'Kode promo tidak valid.'
-            else:
-                promo_error = "Kode promo tidak valid."
+                    messages.error(request, f'Akun "{username}" tidak terdaftar sebagai customer.')
+                return render(request, "checkout.html", {
+                    "event": event, "categories": categories, "seats": seats,
+                    "promo_code": promo_code_final, "promo_error": promo_error,
+                    "promo_success": promo_success, "promo_obj": promo_obj,
+                    "role": role, "username": username,
+                })
 
-        elif "place_order" in request.POST:
-            messages.success(request, "Pesanan berhasil dibuat!")
-            return redirect(_build_url("orders:pesanan", role, username))
+            customer_id = str(cust_row[0])
+
+            try:
+                import uuid as uuid_lib
+                from django.db import transaction
+
+                with transaction.atomic():
+
+                    # Hitung total
+                    with connection.cursor() as cur:
+                        cur.execute(
+                            "SELECT price FROM windah_basudatra.ticket_category WHERE category_id = %s",
+                            [category_id],
+                        )
+                        price_row = cur.fetchone()
+
+                    if not price_row:
+                        messages.error(request, "Kategori tiket tidak valid.")
+                        return redirect(_build_url("orders:checkout", role, username, event_id))
+
+                    unit_price  = float(price_row[0])
+                    base_total  = unit_price * quantity
+                    discount    = 0
+
+                    # Validasi dan hitung diskon promo
+                    promo_id_final = None
+                    if promo_code_final:
+                        with connection.cursor() as cur:
+                            cur.execute(
+                                """
+                                SELECT p.promotion_id, p.promo_code, p.discount_type,
+                                       p.discount_value, p.usage_limit,
+                                       COUNT(op.order_promotion_id) AS used_count,
+                                       p.start_date, p.end_date
+                                FROM windah_basudatra.promotion p
+                                LEFT JOIN windah_basudatra.order_promotion op
+                                       ON op.promotion_id = p.promotion_id
+                                WHERE p.promo_code = %s
+                                GROUP BY p.promotion_id
+                                """,
+                                [promo_code_final],
+                            )
+                            p_row = cur.fetchone()
+
+                        if not p_row:
+                            raise Exception(f'ERROR: Promotion dengan kode "{promo_code_final}" tidak ditemukan.')
+
+                        p_id, p_code, p_type, p_value, p_limit, p_used, p_start, p_end = p_row
+                        if p_used >= p_limit:
+                            raise Exception(f'ERROR: Promotion "{p_code}" telah mencapai batas maksimum penggunaan.')
+
+                        event_date = event["event_date_raw"].date() if event["event_date_raw"] else None
+                        if event_date and not (p_start <= event_date <= p_end):
+                            raise Exception(f'ERROR: Promotion "{p_code}" tidak berlaku untuk tanggal event ini ({event_date}, berlaku {p_start} s.d. {p_end}).')
+
+                        promo_id_final = str(p_id)
+                        if p_type == "PERCENTAGE":
+                            discount = base_total * (float(p_value) / 100)
+                        else:
+                            discount = float(p_value)
+
+                    total_amount = max(base_total - discount, 0)
+
+                    # Buat ORDER
+                    new_order_id = str(uuid_lib.uuid4())
+                    with connection.cursor() as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO windah_basudatra."order"
+                                (order_id, order_date, payment_status, total_amount, customer_id)
+                            VALUES (%s, NOW(), 'PENDING', %s, %s)
+                            """,
+                            [new_order_id, total_amount, customer_id],
+                        )
+
+                    # Buat TICKET(s)
+                    ticket_ids = []
+                    for i in range(quantity):
+                        ticket_id   = str(uuid_lib.uuid4())
+                        ticket_code = f"TKT-{ticket_id[:8].upper()}"
+                        with connection.cursor() as cur:
+                            cur.execute(
+                                """
+                                INSERT INTO windah_basudatra.ticket
+                                    (ticket_id, ticket_code, category_id, order_id)
+                                VALUES (%s, %s, %s, %s)
+                                """,
+                                [ticket_id, ticket_code, category_id, new_order_id],
+                            )
+                        ticket_ids.append(ticket_id)
+
+                    # Assign kursi (jika RESERVED_SEATING dan kursi dipilih)
+                    if seat_ids:
+                        selected_seats = [s.strip() for s in seat_ids.split(",") if s.strip()]
+                        for seat_id, ticket_id in zip(selected_seats, ticket_ids):
+                            with connection.cursor() as cur:
+                                cur.execute(
+                                    """
+                                    INSERT INTO windah_basudatra.has_relationship (seat_id, ticket_id)
+                                    VALUES (%s, %s)
+                                    """,
+                                    [seat_id, ticket_id],
+                                )
+
+                    # Kurangi quota
+                    with connection.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE windah_basudatra.ticket_category
+                            SET quota = quota - %s
+                            WHERE category_id = %s
+                            """,
+                            [quantity, category_id],
+                        )
+
+                    # Simpan ORDER_PROMOTION — trigger akan validasi di sini
+                    if promo_id_final:
+                        with connection.cursor() as cur:
+                            cur.execute(
+                                """
+                                INSERT INTO windah_basudatra.order_promotion
+                                    (promotion_id, order_id)
+                                VALUES (%s, %s)
+                                """,
+                                [promo_id_final, new_order_id],
+                            )
+
+                messages.success(request, "Pesanan berhasil dibuat!")
+                return redirect(_build_url("orders:pesanan", role, username))
+
+            except Exception as e:
+                # Ekstrak pesan: cek args PostgreSQL (django.db.utils.InternalError),
+                # lalu fallback ke str(e) untuk Exception biasa dari Python
+                raw = ""
+                if hasattr(e, "__cause__") and e.__cause__ is not None:
+                    # Django wraps psycopg2 error — pesan asli ada di __cause__.args[0]
+                    raw = str(e.__cause__.args[0]) if e.__cause__.args else str(e.__cause__)
+                if not raw:
+                    raw = e.args[0] if e.args else str(e)
+
+                raw = raw.strip()
+
+                # Trigger PostgreSQL: RAISE EXCEPTION 'ERROR: ...'
+                # Pesan sudah dimulai langsung dengan teks, misal: "ERROR: Promotion ..."
+                first_line = raw.splitlines()[0] if raw else ""
+                if first_line:
+                    promo_error = first_line
+                else:
+                    promo_error = "Terjadi kesalahan saat membuat pesanan."
 
     context = {
-        "event": event,
-        "categories": categories,
-        "seats": seats,
-        "promo_error": promo_error,
-        "promo_success": promo_success,
-        "role": role,
-        "username": username,
+        "event":                event,
+        "categories":           categories,
+        "seats":                seats,
+        "promo_code":           promo_code,
+        "promo_error":          promo_error,
+        "promo_success":        promo_success,
+        "promo_obj":            promo_obj,
+        "selected_category_id": selected_category_id,
+        "selected_quantity":    selected_quantity,
+        "role":                 role,
+        "username":             username,
     }
     return render(request, "checkout.html", context)
 
