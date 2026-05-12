@@ -124,7 +124,6 @@ BUTTONS
 MODAL & OVERLAY
 ========================= */
 
-/* MODAL & OVERLAY */
 .ak-overlay {
    display: none; position: fixed; inset: 0;
    background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
@@ -257,7 +256,7 @@ GENRE DROPDOWN
 }
 .custom-select-menu.show { display: block; }
 
-.custom-select-item { padding: 12px 16px; font-size: 14px; cursor: pointer; }
+.custom-select-item { padding: 12px 16px; font-size: 14px; cursor: pointer; color: var(--text); }
 .custom-select-item:hover { background: #f8fafc; }
 .custom-select-item.selected { background: var(--accent); color: white; }
 
@@ -308,9 +307,16 @@ TABLE VIEW
    font-weight: 700; font-size: 15px; color: white;
 }
 
-.artist-name { font-weight: 600; font-size: 14px; }
+.artist-name { font-weight: 600; font-size: 14px; color: var(--text); }
 
-.badge { background: #eef2f7; padding: 5px 10px; border-radius: 999px; font-size: 12px; }
+.badge {
+   background: #eef2f7;
+   color: #374151 !important;
+   padding: 5px 10px;
+   border-radius: 999px;
+   font-size: 12px;
+   font-weight: 600;
+}
 
 
 /* =========================
@@ -344,11 +350,13 @@ GRID VIEW (DAFTAR)
    font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
 }
 
-.artist-card-name { font-size: 14px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+.artist-card-name { font-size: 14px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; color: var(--text); }
 
 .artist-badge {
    display: inline-block; background: #eef2f7;
+   color: #374151 !important;
    padding: 3px 8px; border-radius: 6px; font-size: 12px; margin-bottom: 6px;
+   font-weight: 600;
 }
 
 .artist-card-tampil { font-size: 12px; color: #64748b; }
@@ -367,17 +375,21 @@ EMPTY
 .empty-state {
    border: 2px dashed #cbd5e1; padding: 60px;
    text-align: center; border-radius: 24px; background: white;
+   color: var(--muted);
 }
 
 
-/* RESPONSIVE */
+/* =========================
+RESPONSIVE
+========================= */
+
 @media(max-width:1200px) {
-   .stats { grid-template-columns: repeat(2,1fr); }   /* fix: 2 kolom dulu di tablet */
+   .stats { grid-template-columns: repeat(2,1fr); }
    .artist-grid { grid-template-columns: repeat(2,1fr); }
 }
 
 @media(max-width:768px) {
-   .stats { grid-template-columns: 1fr; }             /* baru 1 kolom di mobile */
+   .stats { grid-template-columns: 1fr; }
 }
 
 @media(max-width:760px) {

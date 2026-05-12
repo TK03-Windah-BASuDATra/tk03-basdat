@@ -553,7 +553,7 @@ def add_role_view(request):
 def logout_view(request):
     request.session.flush()
     messages.success(request, 'Logout berhasil.')
-    return redirect(reverse('accounts:login'))
+    return redirect(reverse('dashboard'))
 
 
 # ──────────────────────────────────────────────────────────────

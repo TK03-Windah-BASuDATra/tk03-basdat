@@ -1,7 +1,78 @@
 <style>
-  .nav-dropdown:hover .dropdown-menu {
-    display: block;
+  :root {
+    --accent: #4f46e5;
+    --text: #111827;
+    --muted: #64748b;
+    --border: #e5e7eb;
+    --gradient-primary: linear-gradient(135deg, #4f72f0, #4f46e5);
   }
+
+  .navbar { font-size: 16px !important; padding: 0 !important; }
+
+  .navbar-brand {
+    font-size: 20px !important; font-weight: 800 !important;
+    color: var(--text) !important; letter-spacing: -.03em;
+  }
+  .navbar-brand:hover { color: var(--text) !important; }
+
+  .navbar .nav-link {
+    font-size: 15px !important; font-weight: 500;
+    color: var(--muted) !important; padding: 20px 12px !important;
+    transition: color .15s;
+  }
+  .navbar .nav-link:hover,
+  .navbar .nav-link.active { color: var(--accent) !important; }
+
+  .dropdown-menu {
+    border-radius: 13px !important; border: 1px solid var(--border) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.08) !important;
+    padding: 6px !important; font-size: 14px; margin-top: 0 !important;
+  }
+  .dropdown-item {
+    border-radius: 8px !important; padding: 9px 13px !important;
+    font-size: 14px !important; color: var(--text) !important; font-weight: 500;
+  }
+  .dropdown-item:hover { background: #f0f1ff !important; color: var(--accent) !important; }
+
+  .nav-dropdown:hover .dropdown-menu { display: block; }
+
+  /* Avatar */
+  .nav-avatar-wrap { position: relative; }
+  .nav-avatar-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white; font-size: 13px; font-weight: 700;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: opacity .15s;
+  }
+  .nav-avatar-btn:hover { opacity: .88; }
+
+  .nav-avatar-dropdown {
+    display: none; position: absolute; right: 0; top: calc(100% + 8px);
+    background: white; border-radius: 14px; min-width: 220px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.12); z-index: 9999;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .nav-avatar-dropdown.show { display: block; }
+
+  .nav-avatar-header {
+    padding: 14px 16px; border-bottom: 1px solid #f3f4f6;
+    background: #fafafa;
+  }
+  .nav-avatar-username { font-size: 14px; font-weight: 700; color: var(--text); }
+  .nav-avatar-role {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px; text-transform: capitalize;
+  }
+  .nav-avatar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px; font-size: 14px; color: var(--text);
+    text-decoration: none; transition: background .15s; font-weight: 500;
+  }
+  .nav-avatar-item:hover { background: #f9fafb; color: var(--text); }
+  .nav-avatar-item.danger { color: #ef4444; }
+  .nav-avatar-item.danger:hover { background: #fff5f5; color: #ef4444; }
 </style>
 
 <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
@@ -17,10 +88,10 @@
 
         {% if role == "guest" %}
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'accounts:login' %}">Login</a>
+            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link link-primary" href="{% url 'accounts:register' %}">Registrasi</a>
+            <a class="nav-link" href="{% url 'accounts:register' %}">Registrasi</a>
           </li>
 
         {% elif role == "admin" %}
@@ -28,21 +99,17 @@
             <a class="nav-link" href="{% url 'dashboard' %}?role={{ role }}">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'events:event_manage_list' %}?role={{ role }}">Event Saya</a>
+            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Manajemen Venue</a>
+            <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Manajemen Kursi</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
+            <a class="nav-link" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a>
           </li>
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
@@ -54,6 +121,9 @@
               <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Order (Aset)</a></li>
             </ul>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
+          </li>
 
         {% elif role == "organizer" %}
           <li class="nav-item">
@@ -62,16 +132,27 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'events:event_manage_list' %}?role={{ role }}">Event Saya</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a>
+          </li>
           <li class="nav-item dropdown nav-dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button">Lainnya</a>
+            <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'events:venue_list' %}?role={{ role }}">Venue</a></li>
-              <li><a class="dropdown-item" href="{% url 'seats:manajemen_kursi' %}?role={{ role }}">Kursi</a></li>
-              <li><a class="dropdown-item" href="{% url 'ticket_category:list' %}?role={{ role }}">Kategori Tiket</a></li>
               <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}{% if request.session.username %}&username={{ request.session.username }}{% endif %}">Order</a></li>
-              <li><a class="dropdown-item" href="{% url 'artist:list' %}?role={{ role }}">Artis</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'orders:semua_order' %}?role={{ role }}">Order</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'artist:list' %}?role={{ role }}">Artis</a>
           </li>
 
         {% elif role == "customer" %}
@@ -98,14 +179,39 @@
 
       </ul>
 
-      <div class="d-flex align-items-center gap-2">
-        {% if role and role != "guest" %}
-          <span class="text-muted small">Hi, {{ role|title }}</span>
-          <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary btn-sm rounded-pill">Profile</a>
-          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger btn-sm rounded-pill">Logout</a>
-        {% endif %}
+      {% if role and role != "guest" %}
+      <div class="nav-avatar-wrap ms-3">
+        <button class="nav-avatar-btn" id="avatarBtn" onclick="toggleAvatarMenu()">
+          {{ request.session.username|slice:":2"|upper }}
+        </button>
+        <div class="nav-avatar-dropdown" id="avatarMenu">
+          <div class="nav-avatar-header">
+            <div class="nav-avatar-username">{{ request.session.username }}</div>
+            <div class="nav-avatar-role">{{ role }}</div>
+          </div>
+          <a href="{% url 'accounts:profile' %}" class="nav-avatar-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </a>
+          <a href="{% url 'accounts:logout' %}" class="nav-avatar-item danger">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </a>
+        </div>
       </div>
-    </div>
+      {% endif %}
 
+    </div>
   </div>
 </nav>
+
+<script>
+  function toggleAvatarMenu() {
+    document.getElementById('avatarMenu').classList.toggle('show');
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.nav-avatar-wrap')) {
+      document.getElementById('avatarMenu')?.classList.remove('show');
+    }
+  });
+</script>
