@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db import connection
+from django.db import connection, InternalError
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
@@ -78,6 +78,309 @@ def _do_register(request, full_name=None, email=None, phone=None):
 
 
 # ──────────────────────────────────────────────────────────────
+# REGISTER (multi-step)
+# ──────────────────────────────────────────────────────────────
+
+def register_view(request):
+
+    if _get_session_role(request) != 'guest':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        if request.POST.get('action') == 'back':
+            back_to = int(request.POST.get('back_to', 1))
+            if back_to == 1:
+                _clear_reg_session(request)
+                return render(request, 'register.html', {'step': 1, 'page_title': 'Daftar Akun'})
+            elif back_to == 2:
+                request.session.pop('reg_prefill', None)
+                request.session.pop('reg_role', None)
+                return render(request, 'register.html', {'step': 2, 'page_title': 'Daftar Akun'})
+
+        current_step = int(request.POST.get('step', 1))
+
+        if current_step == 1:
+            username = request.POST.get('username', '').strip()
+            password1 = request.POST.get('password1', '').strip()
+            password2 = request.POST.get('password2', '').strip()
+            agree_terms = request.POST.get('agree_terms')
+            errors = {}
+
+            if not username:
+                errors['username'] = 'Username wajib diisi.'
+            if not password1:
+                errors['password1'] = 'Password wajib diisi.'
+            if password1 and password1 != password2:
+                errors['password2'] = 'Password tidak cocok.'
+            if not agree_terms:
+                errors['agree_terms'] = 'Anda harus menyetujui Syarat & Ketentuan.'
+
+            if errors:
+                return render(request, 'register.html', {
+                    'step': 1, 'errors': errors, 'prev': request.POST, 'page_title': 'Daftar Akun',
+                })
+
+            try:
+                with connection.cursor() as cur:
+                    cur.execute(
+                        'INSERT INTO user_account (username, password) VALUES (%s, %s) RETURNING user_id',
+                        [username, password1],
+                    )
+                    user_id = str(cur.fetchone()[0])
+            except InternalError as e:
+                msg = str(e).split('\n')[0]
+                return render(request, 'register.html', {
+                    'step': 1, 'errors': {'username': msg}, 'prev': request.POST, 'page_title': 'Daftar Akun',
+                })
+
+            request.session['reg_username'] = username
+            request.session['reg_password'] = password1
+            request.session['reg_existing_user_id'] = user_id
+            request.session['reg_step'] = 2
+
+            return render(request, 'register.html', {'step': 2, 'page_title': 'Daftar Akun'})
+
+        elif current_step == 2:
+            role = request.POST.get('role', '')
+            if role not in ('customer', 'organizer', 'admin'):
+                return render(request, 'register.html', {
+                    'step': 2, 'errors': {'role': 'Pilih role yang valid.'}, 'page_title': 'Daftar Akun',
+                })
+
+            request.session['reg_role'] = role
+            request.session['reg_step'] = 3
+
+            return render(request, 'register.html', {
+                'step': 3, 'role': role, 'readonly': role == 'admin', 'page_title': 'Daftar Akun',
+            })
+
+        elif current_step == 3:
+            role = request.session.get('reg_role')
+
+            if role == 'admin':
+                _do_register(request)
+                _clear_reg_session(request)
+                return render(request, 'register.html', {'step': 4, 'page_title': 'Daftar Akun'})
+
+            full_name = request.POST.get('full_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            phone_number = request.POST.get('phone_number', '').strip()
+            errors = {}
+
+            if not full_name:
+                errors['full_name'] = 'Nama lengkap wajib diisi.'
+            if not email:
+                errors['email'] = 'Email wajib diisi.'
+            if not phone_number:
+                errors['phone_number'] = 'Nomor telepon wajib diisi.'
+
+            if errors:
+                return render(request, 'register.html', {
+                    'step': 3, 'role': role, 'errors': errors, 'prev': request.POST, 'page_title': 'Daftar Akun',
+                })
+
+            _do_register(request, full_name=full_name, email=email, phone=phone_number)
+            _clear_reg_session(request)
+            return render(request, 'register.html', {'step': 4, 'page_title': 'Daftar Akun'})
+
+    _clear_reg_session(request)
+    return render(request, 'register.html', {'step': 1, 'page_title': 'Daftar Akun'})
+
+
+# ──────────────────────────────────────────────────────────────
+# MENAMBAH ROLE DI AKUN (multi-step)
+# ──────────────────────────────────────────────────────────────
+def add_role_view(request):
+    if _get_session_role(request) != 'guest':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # ── BACK ─────────────────────────────────────────────
+        if request.POST.get('action') == 'back':
+            back_to = int(request.POST.get('back_to', 1))
+            if back_to == 1:
+                _clear_reg_session(request)
+                return render(request, 'register.html', {'step': 1, 'page_title': 'Tambah Role'})
+            elif back_to == 2:
+                request.session.pop('reg_prefill', None)
+                request.session.pop('reg_role', None)
+                return render(request, 'register.html', {'step': 2, 'page_title': 'Tambah Role'})
+
+        current_step = int(request.POST.get('step', 1))
+
+        # ── STEP 1 ──────────────────────────────────────────
+        if current_step == 1:
+            username = request.POST.get('username', '').strip()
+            password1 = request.POST.get('password1', '').strip()
+            password2 = request.POST.get('password2', '').strip()
+            agree_terms = request.POST.get('agree_terms')
+            errors = {}
+
+            # basic validation
+            if not username:
+                errors['username'] = 'Username wajib diisi.'
+            if not password1:
+                errors['password1'] = 'Password wajib diisi.'
+            if password1 and password1 != password2:
+                errors['password2'] = 'Password tidak cocok.'
+            if not agree_terms:
+                errors['agree_terms'] = 'Anda harus menyetujui Syarat & Ketentuan.'
+
+            # VALIDASI USER EXISTING DI SINI
+            existing_user_id = None
+
+            if username and password1:
+                with connection.cursor() as cur:
+                    cur.execute(
+                        'SELECT user_id, password FROM user_account WHERE username = %s',
+                        [username],
+                    )
+                    row = cur.fetchone()
+
+                    if row:
+                        existing_user_id, existing_password = str(row[0]), row[1]
+
+                        # password salah -> STOP di step 1
+                        if existing_password != password1:
+                            errors['password1'] = 'Password tidak cocok dengan akun yang sudah ada.'
+
+            # kalau ada error -> stop
+            if errors:
+                return render(request, 'register.html', {
+                    'step': 1,
+                    'errors': errors,
+                    'prev': request.POST,
+                    'page_title': 'Tambah Role'
+                })
+
+            # simpan session
+            request.session['reg_username'] = username
+            request.session['reg_password'] = password1
+            request.session['reg_existing_user_id'] = existing_user_id
+            request.session['reg_step'] = 2
+
+            # kalau user lama → kasih info
+            if existing_user_id:
+                messages.info(request, "Akun ditemukan. Anda akan menambahkan role baru.")
+
+            return render(request, 'register.html', {'step': 2, 'page_title': 'Tambah Role'})
+
+        # ── STEP 2 ──────────────────────────────────────────
+        elif current_step == 2:
+            role = request.POST.get('role', '')
+            if role not in ('customer', 'organizer', 'admin'):
+                return render(request, 'register.html', {
+                    'step': 2,
+                    'errors': {'role': 'Pilih role yang valid.'},
+                    'page_title': 'Tambah Role'
+                })
+
+            username = request.session.get('reg_username')
+            role_name = ROLE_NAME_MAP[role]
+            existing_user_id = request.session.get('reg_existing_user_id')
+            prefill = None
+
+            with connection.cursor() as cur:
+                # kalau user lama → cek role sudah ada atau belum
+                if existing_user_id:
+                    cur.execute(
+                        """
+                        SELECT 1 FROM account_role ar
+                        JOIN role r ON r.role_id = ar.role_id
+                        WHERE ar.user_id = %s AND r.role_name = %s
+                        """,
+                        [existing_user_id, role_name],
+                    )
+                    if cur.fetchone():
+                        return render(request, 'register.html', {
+                            'step': 2,
+                            'errors': {'role': f'Akun ini sudah memiliki role {role}. Silakan login.'},
+                            'page_title': 'Tambah Role'
+                        })
+
+                    # prefill data
+                    if role != 'admin':
+                        cur.execute(
+                            'SELECT full_name, contact_email, phone_number FROM customer WHERE user_id = %s',
+                            [existing_user_id],
+                        )
+                        row = cur.fetchone()
+                        if not row:
+                            cur.execute(
+                                'SELECT organizer_name, contact_email, phone_number FROM organizer WHERE user_id = %s',
+                                [existing_user_id],
+                            )
+                            row = cur.fetchone()
+
+                        if row:
+                            prefill = {
+                                'full_name': row[0],
+                                'email': row[1],
+                                'phone_number': row[2],
+                            }
+
+            request.session['reg_role'] = role
+            request.session['reg_step'] = 3
+
+            if prefill:
+                request.session['reg_prefill'] = prefill
+
+            return render(request, 'register.html', {
+                'step': 3,
+                'role': role,
+                'prefill': prefill,
+                'readonly': prefill is not None or role == 'admin',
+                'page_title': 'Tambah Role'
+            })
+
+        # ── STEP 3 ──────────────────────────────────────────
+        elif current_step == 3:
+            role = request.session.get('reg_role')
+            is_admin = role == 'admin'
+            has_prefill = request.session.get('reg_prefill') is not None
+            readonly = is_admin or has_prefill
+
+            if readonly:
+                prefill = request.session.get('reg_prefill')
+                full_name = prefill['full_name'] if prefill else None
+                email = prefill['email'] if prefill else None
+                phone_number = prefill['phone_number'] if prefill else None
+
+                _do_register(request, full_name=full_name, email=email, phone=phone_number)
+                _clear_reg_session(request)
+                return render(request, 'register.html', {'step': 4, 'page_title': 'Tambah Role'})
+
+            full_name = request.POST.get('full_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            phone_number = request.POST.get('phone_number', '').strip()
+            errors = {}
+
+            if not full_name:
+                errors['full_name'] = 'Nama lengkap wajib diisi.'
+            if not email:
+                errors['email'] = 'Email wajib diisi.'
+            if not phone_number:
+                errors['phone_number'] = 'Nomor telepon wajib diisi.'
+
+            if errors:
+                return render(request, 'register.html', {
+                    'step': 3,
+                    'role': role,
+                    'errors': errors,
+                    'prev': request.POST,
+                    'page_title': 'Tambah Role'
+                })
+
+            _do_register(request, full_name=full_name, email=email, phone=phone_number)
+            _clear_reg_session(request)
+            return render(request, 'register.html', {'step': 4, 'page_title': 'Tambah Role'})
+
+    # GET
+    _clear_reg_session(request)
+    return render(request, 'register.html', {'step': 1, 'page_title': 'Tambah Role'})
+
+
+# ──────────────────────────────────────────────────────────────
 # LOGIN
 # ──────────────────────────────────────────────────────────────
 
@@ -120,196 +423,6 @@ def login_view(request):
         return redirect('dashboard')
 
     return render(request, 'login.html', {'form': form})
-
-
-# ──────────────────────────────────────────────────────────────
-# REGISTER (multi-step)
-# ──────────────────────────────────────────────────────────────
-
-def register_view(request):
-    if _get_session_role(request) != 'guest':
-        return redirect('dashboard')
-
-    if request.method == 'POST':
-        # ── BACK ─────────────────────────────────────────────
-        if request.POST.get('action') == 'back':
-            back_to = int(request.POST.get('back_to', 1))
-            if back_to == 1:
-                _clear_reg_session(request)
-                return render(request, 'register.html', {'step': 1})
-            elif back_to == 2:
-                request.session.pop('reg_prefill', None)
-                request.session.pop('reg_role', None)
-                return render(request, 'register.html', {'step': 2})
-
-        current_step = int(request.POST.get('step', 1))
-
-        # ── STEP 1 ──────────────────────────────────────────
-        if current_step == 1:
-            username = request.POST.get('username', '').strip()
-            password1 = request.POST.get('password1', '').strip()
-            password2 = request.POST.get('password2', '').strip()
-            agree_terms = request.POST.get('agree_terms')
-            errors = {}
-
-            # basic validation
-            if not username:
-                errors['username'] = 'Username wajib diisi.'
-            if not password1:
-                errors['password1'] = 'Password wajib diisi.'
-            if password1 and password1 != password2:
-                errors['password2'] = 'Password tidak cocok.'
-            if not agree_terms:
-                errors['agree_terms'] = 'Anda harus menyetujui Syarat & Ketentuan.'
-
-            # VALIDASI USER EXISTING DI SINI
-            existing_user_id = None
-
-            if username and password1:
-                with connection.cursor() as cur:
-                    cur.execute(
-                        'SELECT user_id, password FROM user_account WHERE username = %s',
-                        [username],
-                    )
-                    row = cur.fetchone()
-
-                    if row:
-                        existing_user_id, existing_password = str(row[0]), row[1]
-
-                        # ❌ password salah → STOP di step 1
-                        if existing_password != password1:
-                            errors['password1'] = 'Password tidak cocok dengan akun yang sudah ada.'
-
-            # kalau ada error -> stop
-            if errors:
-                return render(request, 'register.html', {
-                    'step': 1,
-                    'errors': errors,
-                    'prev': request.POST,
-                })
-
-            # simpan session
-            request.session['reg_username'] = username
-            request.session['reg_password'] = password1
-            request.session['reg_existing_user_id'] = existing_user_id
-            request.session['reg_step'] = 2
-
-            # kalau user lama → kasih info
-            if existing_user_id:
-                messages.info(request, "Akun ditemukan. Anda akan menambahkan role baru.")
-
-            return render(request, 'register.html', {'step': 2})
-
-        # ── STEP 2 ──────────────────────────────────────────
-        elif current_step == 2:
-            role = request.POST.get('role', '')
-            if role not in ('customer', 'organizer', 'admin'):
-                return render(request, 'register.html', {
-                    'step': 2,
-                    'errors': {'role': 'Pilih role yang valid.'},
-                })
-
-            username = request.session.get('reg_username')
-            role_name = ROLE_NAME_MAP[role]
-            existing_user_id = request.session.get('reg_existing_user_id')
-            prefill = None
-
-            with connection.cursor() as cur:
-                # kalau user lama → cek role sudah ada atau belum
-                if existing_user_id:
-                    cur.execute(
-                        """
-                        SELECT 1 FROM account_role ar
-                        JOIN role r ON r.role_id = ar.role_id
-                        WHERE ar.user_id = %s AND r.role_name = %s
-                        """,
-                        [existing_user_id, role_name],
-                    )
-                    if cur.fetchone():
-                        return render(request, 'register.html', {
-                            'step': 2,
-                            'errors': {'role': f'Akun ini sudah memiliki role {role}. Silakan login.'},
-                        })
-
-                    # prefill data
-                    if role != 'admin':
-                        cur.execute(
-                            'SELECT full_name, contact_email, phone_number FROM customer WHERE user_id = %s',
-                            [existing_user_id],
-                        )
-                        row = cur.fetchone()
-                        if not row:
-                            cur.execute(
-                                'SELECT organizer_name, contact_email, phone_number FROM organizer WHERE user_id = %s',
-                                [existing_user_id],
-                            )
-                            row = cur.fetchone()
-
-                        if row:
-                            prefill = {
-                                'full_name': row[0],
-                                'email': row[1],
-                                'phone_number': row[2],
-                            }
-
-            request.session['reg_role'] = role
-            request.session['reg_step'] = 3
-
-            if prefill:
-                request.session['reg_prefill'] = prefill
-
-            return render(request, 'register.html', {
-                'step': 3,
-                'role': role,
-                'prefill': prefill,
-                'readonly': prefill is not None or role == 'admin',
-            })
-
-        # ── STEP 3 ──────────────────────────────────────────
-        elif current_step == 3:
-            role = request.session.get('reg_role')
-            is_admin = role == 'admin'
-            has_prefill = request.session.get('reg_prefill') is not None
-            readonly = is_admin or has_prefill
-
-            if readonly:
-                prefill = request.session.get('reg_prefill')
-                full_name = prefill['full_name'] if prefill else None
-                email = prefill['email'] if prefill else None
-                phone_number = prefill['phone_number'] if prefill else None
-
-                _do_register(request, full_name=full_name, email=email, phone=phone_number)
-                _clear_reg_session(request)
-                return render(request, 'register.html', {'step': 4})
-
-            full_name = request.POST.get('full_name', '').strip()
-            email = request.POST.get('email', '').strip()
-            phone_number = request.POST.get('phone_number', '').strip()
-            errors = {}
-
-            if not full_name:
-                errors['full_name'] = 'Nama lengkap wajib diisi.'
-            if not email:
-                errors['email'] = 'Email wajib diisi.'
-            if not phone_number:
-                errors['phone_number'] = 'Nomor telepon wajib diisi.'
-
-            if errors:
-                return render(request, 'register.html', {
-                    'step': 3,
-                    'role': role,
-                    'errors': errors,
-                    'prev': request.POST,
-                })
-
-            _do_register(request, full_name=full_name, email=email, phone=phone_number)
-            _clear_reg_session(request)
-            return render(request, 'register.html', {'step': 4})
-
-    # GET
-    _clear_reg_session(request)
-    return render(request, 'register.html', {'step': 1})
-
 
 # ──────────────────────────────────────────────────────────────
 # LOGOUT

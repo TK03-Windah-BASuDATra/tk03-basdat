@@ -266,14 +266,18 @@
     <div class="reg-sidebar">
 
       {% if step == 1 %}
-        <a href="{% url 'accounts:login' %}" class="reg-sidebar-back">
-          <span class="back-arrow">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </span>
-          Kembali ke Login
-        </a>
+        {% if page_title == 'Tambah Role' %}
+          <a href="{% url 'accounts:register' %}" class="reg-sidebar-back">
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="reg-sidebar-back">
+        {% endif %}
+            <span class="back-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </span>
+            {% if page_title == 'Tambah Role' %}Kembali ke Register{% else %}Kembali ke Login{% endif %}
+          </a>
       {% elif step == 2 %}
-        <form method="post" action="{% url 'accounts:register' %}" class="d-inline">
+        <form method="post" action="{% if page_title == 'Tambah Role' %}{% url 'accounts:add_role' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="d-inline">
           {% csrf_token %}
           <input type="hidden" name="action" value="back">
           <input type="hidden" name="back_to" value="1">
@@ -285,7 +289,7 @@
           </button>
         </form>
       {% elif step == 3 %}
-        <form method="post" action="{% url 'accounts:register' %}" class="d-inline">
+        <form method="post" action="{% if page_title == 'Tambah Role' %}{% url 'accounts:add_role' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="d-inline">
           {% csrf_token %}
           <input type="hidden" name="action" value="back">
           <input type="hidden" name="back_to" value="2">
@@ -298,7 +302,7 @@
         </form>
       {% endif %}
 
-      <div class="reg-sidebar-title">Daftar Akun</div>
+      <div class="reg-sidebar-title">{{ page_title }}</div>
 
       <ul class="step-list">
         <li class="step-list-item {% if step == 1 %}active{% elif step > 1 %}done{% endif %}">
@@ -362,15 +366,15 @@
       </div>
 
       {% elif step == 1 %}
-      <h2 class="reg-main-title">Buat Akun</h2>
-      <p class="text-muted small mb-4">Isi username dan password untuk memulai.</p>
-      <form method="post" action="{% url 'accounts:register' %}">
+      <h2 class="reg-main-title">{% if page_title == 'Tambah Role' %}Verifikasi Akun{% else %}Buat Akun{% endif %}</h2>
+      <p class="text-muted small mb-4">{% if page_title == 'Tambah Role' %}Masukkan username dan password akun Anda.{% else %}Isi username dan password untuk memulai.{% endif %}</p>
+      <form method="post" action="{% if page_title == 'Tambah Role' %}{% url 'accounts:add_role' %}{% else %}{% url 'accounts:register' %}{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="1">
         <div class="mb-field">
           <label class="form-label fw-semibold">Username</label>
-          <input type="text" name="username" class="form-control" placeholder="Pilih username"
-            value="{{ prefill.username|default:'' }}" required>
+          <input type="text" name="username" class="form-control" placeholder="{% if page_title == 'Tambah Role' %}Username akun Anda{% else %}Pilih username{% endif %}"
+            value="{{ prev.username|default:'' }}" required>
           {% if errors.username %}<div class="text-danger small mt-1">{{ errors.username }}</div>{% endif %}
         </div>
         <div class="mb-field">
@@ -399,6 +403,9 @@
       </form>
       <p class="text-muted small text-center mt-3 mb-0">
         Sudah punya akun? <a href="{% url 'accounts:login' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Login di sini</a>
+        {% if page_title == 'Daftar Akun' %}
+         atau <a href="{% url 'accounts:add_role' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Tambah role</a>
+        {% endif %}
       </p>
 
       {% elif step == 2 %}
@@ -407,7 +414,7 @@
       {% if errors.role %}
         <div class="alert alert-danger py-2 small mb-3">{{ errors.role }}</div>
       {% endif %}
-      <form method="post" action="{% url 'accounts:register' %}">
+      <form method="post" action="{% if page_title == 'Tambah Role' %}{% url 'accounts:add_role' %}{% else %}{% url 'accounts:register' %}{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="2">
         <div class="d-flex flex-column gap-3 mb-4">
@@ -463,6 +470,9 @@
       </form>
       <p class="text-muted small text-center mt-3 mb-0">
         Sudah punya akun? <a href="{% url 'accounts:login' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Login di sini</a>
+        {% if page_title == 'Daftar Akun' %}
+         atau <a href="{% url 'accounts:add_role' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Tambah role</a>
+        {% endif %}
       </p>
 
       {% elif step == 3 %}
@@ -482,7 +492,7 @@
             Data sudah terisi otomatis. Klik <strong>Daftar</strong> untuk melanjutkan.
           </div>
         {% endif %}
-      <form method="post" action="{% url 'accounts:register' %}">
+      <form method="post" action="{% if page_title == 'Tambah Role' %}{% url 'accounts:add_role' %}{% else %}{% url 'accounts:register' %}{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="3">
         {% if role != "admin" %}
@@ -519,6 +529,9 @@
       </form>
       <p class="text-muted small text-center mt-3 mb-0">
         Sudah punya akun? <a href="{% url 'accounts:login' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Login di sini</a>
+        {% if page_title == 'Daftar Akun' %}
+        atau <a href="{% url 'accounts:add_role' %}" class="fw-semibold text-decoration-none" style="color:#4F6EF7;">Tambah role</a>
+        {% endif %}
       </p>
       {% endif %}
 
@@ -539,7 +552,7 @@
     });
     const cd = document.getElementById('countdown');
     if (cd) {
-      let n =8;
+      let n = 8;
       const t = setInterval(() => {
         n--;
         cd.textContent = n;
