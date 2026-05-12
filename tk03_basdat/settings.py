@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from urllib.parse import urlparse, parse_qsl
 # Load environment variables from .env file
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,9 +29,9 @@ SECRET_KEY = 'django-insecure-u-a9h(u9yvvd!!jk=(cg30mejmczb0uaf&rj!u3=79ozal%j89
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = not PRODUCTION
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"] if not PRODUCTION else [os.getenv('ALLOWED_HOSTS', '').split(',')]
 
 
 # Application definition
@@ -91,10 +92,23 @@ WSGI_APPLICATION = 'tk03_basdat.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# Database configuration
-    # Production: gunakan PostgreSQL dengan kredensial dari environment variables
-DATABASES = {
-    'default': {
+# Database configuration: use PRODUCTION=true or PRODUCTION=false .env var to switch between local and prod
+if PRODUCTION:
+    tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': tmpPostgres.path.replace('/', ''),
+            'USER': tmpPostgres.username,
+            'PASSWORD': tmpPostgres.password,
+            'HOST': tmpPostgres.hostname,
+            'PORT': 5432,
+            'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
@@ -105,7 +119,7 @@ DATABASES = {
             'options': f"-c search_path={os.getenv('SCHEMA', 'public')}"
         }
     }
-}
+    }
     
 
 
