@@ -327,16 +327,19 @@ def checkout(request, event_id):
 
                     total_amount = max(base_total - discount, 0)
 
-                    # Buat ORDER
+                    # Buat ORDER — simpan sebagai UTC, tampilan dikonversi ke WIB via SQL
+                    from datetime import datetime, timezone
+                    order_date_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
                     new_order_id = str(uuid_lib.uuid4())
                     with connection.cursor() as cur:
                         cur.execute(
                             """
                             INSERT INTO windah_basudatra."order"
                                 (order_id, order_date, payment_status, total_amount, customer_id)
-                            VALUES (%s, NOW(), 'PENDING', %s, %s)
+                            VALUES (%s, %s, 'PENDING', %s, %s)
                             """,
-                            [new_order_id, total_amount, customer_id],
+                            [new_order_id, order_date_utc, total_amount, customer_id],
                         )
 
                     # Buat TICKET(s)
@@ -443,7 +446,8 @@ def order_list(request):
         sql = """
             SELECT
                 o.order_id,
-                o.order_date,
+                TO_CHAR(o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta',
+                        'DD Mon YYYY, HH24:MI "WIB"') AS order_date,
                 o.payment_status,
                 o.total_amount,
                 c.full_name AS customer_name
@@ -484,7 +488,8 @@ def order_list(request):
             sql = """
                 SELECT DISTINCT
                     o.order_id,
-                    o.order_date,
+                    TO_CHAR(o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta',
+                            'DD Mon YYYY, HH24:MI "WIB"') AS order_date,
                     o.payment_status,
                     o.total_amount,
                     c.full_name AS customer_name
@@ -530,7 +535,8 @@ def order_list(request):
             sql = """
                 SELECT
                     o.order_id,
-                    o.order_date,
+                    TO_CHAR(o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta',
+                            'DD Mon YYYY, HH24:MI "WIB"') AS order_date,
                     o.payment_status,
                     o.total_amount,
                     c.full_name AS customer_name
@@ -559,7 +565,8 @@ def order_list(request):
     for order in orders:
         order["order_id"] = str(order["order_id"])
         order["total_amount"] = float(order["total_amount"])
-        order["order_date"] = order["order_date"].strftime("%Y-%m-%d %H:%M") if order["order_date"] else "-"
+        if not order["order_date"]:
+            order["order_date"] = "-"
 
     total_order = len(orders)
     total_paid = sum(1 for order in orders if order["payment_status"] == "PAID")
