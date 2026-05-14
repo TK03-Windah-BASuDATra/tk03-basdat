@@ -332,11 +332,157 @@ def _clean_ticket_forms(formset):
         )
     return tickets
 
+def _datetime_local_value(value):
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%dT%H:%M")
+    return value
+
+
+def _event_initial_from_form(form):
+    return {
+        "event_title": form.cleaned_data.get("event_title", ""),
+        "venue": form.cleaned_data.get("venue", ""),
+        "event_datetime": _datetime_local_value(form.cleaned_data.get("event_datetime")),
+        "image_url": form.cleaned_data.get("image_url", ""),
+        "description": form.cleaned_data.get("description", ""),
+    }
+
+
+def _ticket_initial_from_formset(formset, remove_duplicates=False):
+    tickets = []
+    seen_categories = set()
+
+    for ticket_form in formset:
+        if not ticket_form.cleaned_data or ticket_form.cleaned_data.get("DELETE"):
+            continue
+
+        category_name = ticket_form.cleaned_data.get("category_name", "").strip()
+        if not category_name:
+            continue
+
+        category_key = category_name.lower()
+
+        if remove_duplicates and category_key in seen_categories:
+            continue
+
+        seen_categories.add(category_key)
+
+        tickets.append({
+            "category_name": category_name,
+            "price": ticket_form.cleaned_data.get("price"),
+            "quota": ticket_form.cleaned_data.get("quota"),
+        })
+
+    return tickets
+
+
+def _artist_initial_from_formset(artist_formset, remove_duplicates=False):
+    artists = []
+    seen_artists = set()
+
+    for artist_form in artist_formset:
+        if not artist_form.cleaned_data or artist_form.cleaned_data.get("DELETE"):
+            continue
+
+        artist_id = artist_form.cleaned_data.get("artist")
+        artist_role = artist_form.cleaned_data.get("role", "").strip()
+
+        if not artist_id or not artist_role:
+            continue
+
+        if remove_duplicates and artist_id in seen_artists:
+            continue
+
+        seen_artists.add(artist_id)
+
+        artists.append({
+            "artist": str(artist_id),
+            "role": artist_role,
+        })
+
+    return artists
+
+
+def _render_event_form_after_database_error(
+    request,
+    *,
+    role,
+    title,
+    form,
+    formset,
+    artist_formset,
+    artist_choices,
+    event_id=None,
+    mode=None,
+):
+    venues = _load_venues()
+
+    clean_form = EventForm(
+        initial=_event_initial_from_form(form),
+        venues=venues,
+    )
+
+    clean_ticket_formset = TicketCategoryFormSet(
+        initial=_ticket_initial_from_formset(formset, remove_duplicates=True),
+        prefix="ticket_categories",
+    )
+
+    clean_artist_formset = EventArtistFormSet(
+        initial=_artist_initial_from_formset(artist_formset, remove_duplicates=True),
+        prefix="event_artists",
+        form_kwargs={"artist_choices": artist_choices},
+    )
+
+    context = {
+        "form": clean_form,
+        "formset": clean_ticket_formset,
+        "artist_formset": clean_artist_formset,
+        "title": title,
+        "role": role,
+    }
+
+    if event_id:
+        context["event_id"] = event_id
+    if mode:
+        context["mode"] = mode
+
+    return render(request, "event_form.html", context)
+
+def _delete_ticket_dependencies_for_event(cursor, event_id):
+    if (
+        _table_exists("has_relationship")
+        and _table_exists("ticket")
+        and _table_exists("ticket_category")
+    ):
+        cursor.execute(
+            """
+            DELETE FROM has_relationship hr
+            USING ticket t, ticket_category tc
+            WHERE hr.ticket_id = t.ticket_id
+            AND t.category_id = tc.category_id
+            AND tc.event_id = %s
+            """,
+            [event_id],
+        )
+
+    if _table_exists("ticket") and _table_exists("ticket_category"):
+        cursor.execute(
+            """
+            DELETE FROM ticket t
+            USING ticket_category tc
+            WHERE t.category_id = tc.category_id
+            AND tc.event_id = %s
+            """,
+            [event_id],
+        )
+
 def _sync_ticket_categories(cursor, event_id, tickets):
     if not _table_exists("ticket_category"):
         return
+    _delete_ticket_dependencies_for_event(cursor, event_id)
 
     cursor.execute("DELETE FROM ticket_category WHERE event_id = %s", [event_id])
+
     for ticket in tickets:
         cursor.execute(
             """
@@ -585,6 +731,15 @@ def event_create(request):
                 return redirect(_with_role("events:event_manage_list", role))
             except DatabaseError as exc:
                 messages.error(request, _db_error_message(exc))
+                return _render_event_form_after_database_error(
+                    request,
+                    role=role,
+                    title="Buat Event",
+                    form=form,
+                    formset=formset,
+                    artist_formset=artist_formset,
+                    artist_choices=artist_choices,
+                )
     else:
         form = EventForm(venues=venues)
         formset = TicketCategoryFormSet(prefix="ticket_categories")
@@ -654,6 +809,17 @@ def event_update(request):
                 return redirect(_with_role("events:event_manage_list", role))
             except DatabaseError as exc:
                 messages.error(request, _db_error_message(exc))
+                return _render_event_form_after_database_error(
+                    request,
+                    role=role,
+                    title="Edit Event",
+                    form=form,
+                    formset=formset,
+                    artist_formset=artist_formset,
+                    artist_choices=artist_choices,
+                    event_id=event_id,
+                    mode="save",
+                )
     else:
         form = EventForm(
             initial={
@@ -710,18 +876,72 @@ def event_delete(request):
     if request.POST.get("mode") == "confirm":
         try:
             with transaction.atomic(), connection.cursor() as cursor:
+                # 1. Hapus relasi seat-ticket terlebih dahulu
+                # karena has_relationship.ticket_id mereferensikan ticket.ticket_id.
+                if (
+                    _table_exists("has_relationship")
+                    and _table_exists("ticket")
+                    and _table_exists("ticket_category")
+                ):
+                    cursor.execute(
+                        """
+                        DELETE FROM has_relationship hr
+                        USING ticket t, ticket_category tc
+                        WHERE hr.ticket_id = t.ticket_id
+                          AND t.category_id = tc.category_id
+                          AND tc.event_id = %s
+                        """,
+                        [event_id],
+                    )
+
+                # 2. Hapus ticket yang memakai kategori tiket event ini.
+                if _table_exists("ticket") and _table_exists("ticket_category"):
+                    cursor.execute(
+                        """
+                        DELETE FROM ticket t
+                        USING ticket_category tc
+                        WHERE t.category_id = tc.category_id
+                          AND tc.event_id = %s
+                        """,
+                        [event_id],
+                    )
+
+                # 3. Baru hapus ticket_category.
                 if _table_exists("ticket_category"):
-                    cursor.execute("DELETE FROM ticket_category WHERE event_id = %s", [event_id])
+                    cursor.execute(
+                        "DELETE FROM ticket_category WHERE event_id = %s",
+                        [event_id],
+                    )
+
+                # 4. Hapus relasi event-artist.
                 if _table_exists("event_artist"):
-                    cursor.execute("DELETE FROM event_artist WHERE event_id = %s", [event_id])
-                cursor.execute("DELETE FROM event WHERE event_id = %s", [event_id])
+                    cursor.execute(
+                        "DELETE FROM event_artist WHERE event_id = %s",
+                        [event_id],
+                    )
+
+                # 5. Terakhir hapus event.
+                cursor.execute(
+                    "DELETE FROM event WHERE event_id = %s",
+                    [event_id],
+                )
+
             messages.success(request, "Event berhasil dihapus.")
             return redirect(_with_role("events:event_manage_list", role))
+
         except DatabaseError as exc:
             messages.error(request, _db_error_message(exc))
             return redirect(_with_role("events:event_manage_list", role))
 
-    return render(request, "event_confirm_delete.html", {"event": event, "event_id": event_id, "role": role})
+    return render(
+        request,
+        "event_confirm_delete.html",
+        {
+            "event": event,
+            "event_id": event_id,
+            "role": role,
+        },
+    )
 
 def _load_artist_choices():
     with connection.cursor() as cursor:
