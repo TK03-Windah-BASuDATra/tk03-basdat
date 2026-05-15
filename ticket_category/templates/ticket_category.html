@@ -73,8 +73,25 @@
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
       </svg>
       <input type="text" class="search-input" id="searchInput"
-             placeholder="Cari kategori..." oninput="render()">
+            placeholder="Cari kategori..." oninput="render()">
     </div>
+
+    <div style="position:relative;min-width:220px;">
+      <form method="get" style="display:flex;gap:8px;align-items:center;">
+        <input type="text" name="event_id" class="filter-select"
+              value="{{ event_id_filter }}"
+              placeholder="Cari Event ID..."
+              style="min-width:400px;">
+        <button type="submit" class="btn-primary" style="padding:9px 14px;white-space:nowrap;">Cari</button>
+        {% if event_id_filter %}
+          <a href="?" class="btn-cancel" style="padding:9px 14px;white-space:nowrap;text-decoration:none;">×</a>
+        {% endif %}
+      </form>
+      {% if event_id_error %}
+        <div style="position:absolute;top:100%;left:0;font-size:12px;color:#ef4444;margin-top:4px;white-space:nowrap;">{{ event_id_error }}</div>
+      {% endif %}
+    </div>
+
     <select class="filter-select" id="acaraFilter" onchange="render()">
       <option value="all">Semua Acara</option>
     </select>
@@ -190,14 +207,13 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Pass data dari Django ke JS — nanti dari query PostgreSQL di views.py #}
 <script>
   const TICKETS_DATA    = {{ tickets_json|safe }};
   const ACARA_LIST      = {{ acara_list_json|safe }};
   const CAN_MANAGE      = {{ can_manage|yesno:"true,false" }};
-  const CREATE_URL      = "{% url 'ticket_category:create' %}?role={{ role }}";
-  const EDIT_URL_BASE   = "/ticket-category/";  {# append: {id}/data/ atau {id}/edit/ #}
-  const DELETE_URL_BASE = "/ticket-category/";  {# append: {id}/delete/ #}
+  const CREATE_URL      = "{% url 'ticket_category:create' %}";
+  const EDIT_URL_BASE   = "/ticket-category/";
+  const DELETE_URL_BASE = "/ticket-category/";
 </script>
 <script src="{% static 'js/ticket_category.js' %}"></script>
 {% endblock %}
