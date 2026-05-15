@@ -987,8 +987,6 @@ def event_delete(request):
     if request.POST.get("mode") == "confirm":
         try:
             with transaction.atomic(), connection.cursor() as cursor:
-                # 1. Hapus relasi seat-ticket terlebih dahulu
-                # karena has_relationship.ticket_id mereferensikan ticket.ticket_id.
                 if (
                     _table_exists("has_relationship")
                     and _table_exists("ticket")
@@ -999,39 +997,31 @@ def event_delete(request):
                         DELETE FROM has_relationship hr
                         USING ticket t, ticket_category tc
                         WHERE hr.ticket_id = t.ticket_id
-                          AND t.category_id = tc.category_id
-                          AND tc.event_id = %s
+                        AND t.category_id = tc.category_id
+                        AND tc.event_id = %s
                         """,
                         [event_id],
                     )
-
-                # 2. Hapus ticket yang memakai kategori tiket event ini.
                 if _table_exists("ticket") and _table_exists("ticket_category"):
                     cursor.execute(
                         """
                         DELETE FROM ticket t
                         USING ticket_category tc
                         WHERE t.category_id = tc.category_id
-                          AND tc.event_id = %s
+                        AND tc.event_id = %s
                         """,
                         [event_id],
                     )
-
-                # 3. Baru hapus ticket_category.
                 if _table_exists("ticket_category"):
                     cursor.execute(
                         "DELETE FROM ticket_category WHERE event_id = %s",
                         [event_id],
                     )
-
-                # 4. Hapus relasi event-artist.
                 if _table_exists("event_artist"):
                     cursor.execute(
                         "DELETE FROM event_artist WHERE event_id = %s",
                         [event_id],
                     )
-
-                # 5. Terakhir hapus event.
                 cursor.execute(
                     "DELETE FROM event WHERE event_id = %s",
                     [event_id],

@@ -126,47 +126,51 @@
         <h5 class="modal-title fw-bold">Tambah Tiket Baru</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label">Order</label>
-          <select class="form-select">
+      <form method="POST" action="{% url 'tickets:ticket_create' %}?role={{ user_role }}&username={{ request.GET.username }}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Order</label>
+            <select class="form-select" name="order_id" id="createOrderSelect" required>
+              <option value="">-- Pilih Order --</option>
             {% for o in orders %}
             <option value="{{ o.order_id }}" data-event-id="{{ o.event_id }}">{{ o.order_id }} — {{ o.customer }} — {{ o.event }}</option>
             {% endfor %}
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Kategori Tiket</label>
-          <select class="form-select">
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Kategori Tiket</label>
+            <select class="form-select" name="category_id" id="createCategorySelect" required disabled>
+              <option value="">-- Pilih Kategori --</option>
             {% for eid, cats in categories_by_event.items %}
               {% for c in cats %}
-              <option value="{{ c.category_id }}" data-event-id="{{ eid }}" {% if c.used >= c.quota %}disabled{% endif %}>
+              <option value="{{ c.category_id }}" data-event-id="{{ eid }}">
                 {{ c.category_name }} — Rp {{ c.price|floatformat:0 }} ({{ c.used }}/{{ c.quota }})
               </option>
               {% endfor %}
-            {% endfor %}
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Kursi <span class="text-muted">(opsional — reserved seating)</span></label>
-          <select class="form-select">
-            <option value="">Tanpa Kursi</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="createSeatContainer" style="display:none;">
+            <label class="form-label">Kursi <span class="text-muted">(opsional — reserved seating)</span></label>
+            <select class="form-select" name="seat_id" id="createSeatSelect">
             {% for eid, seat_list in seats_by_event.items %}
               {% for s in seat_list %}
               <option value="{{ s.seat_id }}" data-event-id="{{ eid }}" {% if not s.available %}disabled{% endif %}>{{ s.label }}</option>
               {% endfor %}
             {% endfor %}
-          </select>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Kode Tiket</label>
+            <input class="form-control" placeholder="Auto-generate saat dibuat" disabled>
+          </div>
         </div>
-        <div class="mb-2">
-          <label class="form-label">Kode Tiket</label>
-          <input class="form-control" placeholder="Auto-generate saat dibuat" disabled>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Buat Tiket</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary">Buat Tiket</button>
-      </div>
+      </form>
     </div>
   </div>
 </div>
@@ -174,13 +178,29 @@
 <div class="modal fade" id="updateTicketModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title fw-bold">Update Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <div class="mb-3"><label class="form-label">Kode Tiket</label><input type="text" class="form-control" id="updCode" readonly></div>
-        <div class="mb-3"><label class="form-label">Status</label><select class="form-select" id="updStatus"><option value="Valid">Valid</option><option value="Used">Terpakai</option><option value="Cancelled">Dibatalkan</option></select></div>
-        <div class="mb-2"><label class="form-label">Kursi <span class="text-muted">(opsional)</span></label><select class="form-select" id="updSeat"><option value="">Tanpa Kursi</option></select></div>
-      </div>
-      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="btnSaveUpdate">Simpan</button></div>
+      <form method="POST" id="updateForm" action="">
+        {% csrf_token %}
+        <div class="modal-header"><h5 class="modal-title fw-bold">Update Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Kode Tiket</label><input type="text" class="form-control" id="updCode" readonly></div>
+          <div class="mb-3"><label class="form-label">Status</label>
+            <select class="form-select" id="updStatus" name="status">
+              <option value="Valid">Valid</option>
+              <option value="Used">Terpakai</option>
+              <option value="Cancelled">Dibatalkan</option>
+            </select>
+          </div>
+          <div class="mb-2"><label class="form-label">Kursi <span class="text-muted">(opsional)</span></label>
+            <select class="form-select" id="updSeat" name="seat_id">
+              <option value="">Tanpa Kursi</option>
+              {% for s in all_available_seats_flat %}
+              <option value="{{ s.seat_id }}" class="seat-option" data-event-id="{{ s.event_id }}">{{ s.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div>
+      </form>
     </div>
   </div>
 </div>
@@ -188,9 +208,12 @@
 <div class="modal fade" id="deleteTicketModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Hapus Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><p>Apakah Anda yakin ingin menghapus tiket ini? Relasi kursi akan dilepaskan. Tindakan ini tidak dapat dibatalkan.</p></div>
-      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-danger" id="btnConfirmDelete">Hapus</button></div>
+      <form method="POST" id="deleteForm" action="">
+        {% csrf_token %}
+        <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Hapus Tiket</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Apakah Anda yakin ingin menghapus tiket ini? Relasi kursi akan dilepaskan. Tindakan ini tidak dapat dibatalkan.</p></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-danger">Hapus</button></div>
+      </form>
     </div>
   </div>
 </div>
@@ -198,8 +221,89 @@
 
 {% block extra_js %}
 <script>
-  // TODO search+filter
-  // TODO implement delete (backend)
-  // TODO implement update (backend)
+  document.addEventListener('DOMContentLoaded', function() {
+    const roleParam = "?role={{ user_role }}&username={{ request.GET.username }}";
+    
+    // Create form logic
+    const orderSelect = document.getElementById('createOrderSelect');
+    const categorySelect = document.getElementById('createCategorySelect');
+    const seatSelect = document.getElementById('createSeatSelect');
+    const seatContainer = document.getElementById('createSeatContainer');
+
+    if (orderSelect) {
+      orderSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const eventId = selectedOption.getAttribute('data-event-id');
+        
+        // Filter categories
+        categorySelect.disabled = !eventId;
+        Array.from(categorySelect.options).forEach(opt => {
+          if (opt.value === "") return;
+          opt.style.display = (opt.getAttribute('data-event-id') === eventId) ? '' : 'none';
+          if (opt.getAttribute('data-event-id') !== eventId) opt.selected = false;
+        });
+
+        // Filter seats
+        let hasSeats = false;
+        Array.from(seatSelect.options).forEach(opt => {
+          if (opt.value === "") return;
+          const isMatch = opt.getAttribute('data-event-id') === eventId;
+          opt.style.display = isMatch ? '' : 'none';
+          if (isMatch) hasSeats = true;
+          if (!isMatch) opt.selected = false;
+        });
+        
+        seatContainer.style.display = hasSeats ? '' : 'none';
+      });
+    }
+
+    // Update and Delete Modals logic
+    document.querySelectorAll('.btn-update').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const card = this.closest('.ticket-card');
+        const id = card.getAttribute('data-id');
+        const code = card.getAttribute('data-code');
+        const status = card.getAttribute('data-status');
+        const seatId = card.getAttribute('data-seat-id');
+
+        document.getElementById('updateForm').action = `/my-tickets/update/${id}/` + roleParam;
+        document.getElementById('updCode').value = code;
+        document.getElementById('updStatus').value = status;
+        
+        if (seatId && document.querySelector(`#updSeat option[value="${seatId}"]`)) {
+          document.getElementById('updSeat').value = seatId;
+        } else {
+          document.getElementById('updSeat').value = "";
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const card = this.closest('.ticket-card');
+        const id = card.getAttribute('data-id');
+        document.getElementById('deleteForm').action = `/my-tickets/delete/${id}/` + roleParam;
+      });
+    });
+
+    // Search and Filter
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const container = document.getElementById('ticketsContainer');
+
+    function filterTickets() {
+      const query = searchInput.value.toLowerCase();
+      const status = statusFilter.value;
+      
+      Array.from(container.querySelectorAll('.ticket-card')).forEach(card => {
+        const textMatch = card.textContent.toLowerCase().includes(query);
+        const statusMatch = status === "" || card.getAttribute('data-status') === status;
+        card.style.display = textMatch && statusMatch ? '' : 'none';
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterTickets);
+    if (statusFilter) statusFilter.addEventListener('change', filterTickets);
+  });
 </script>
 {% endblock %}
