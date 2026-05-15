@@ -222,7 +222,7 @@ def ticket_create(request):
 
     if role not in ['admin', 'organizer']:
         messages.error(request, "Hanya Admin atau Organizer yang dapat membuat tiket.")
-        return redirect(f"/tickets/?role={role}&username={username}")
+        return redirect(f"/my-tickets/?role={role}&username={username}")
 
     if request.method == "POST":
         order_id = request.POST.get("order_id")
@@ -231,7 +231,7 @@ def ticket_create(request):
 
         if not order_id or not category_id:
             messages.error(request, "Order dan Kategori Tiket wajib diisi.")
-            return redirect(f"/tickets/?role={role}&username={username}")
+            return redirect(f"/my-tickets/?role={role}&username={username}")
 
         ticket_id = str(uuid.uuid4())
         ticket_code = f"TIK-{uuid.uuid4().hex[:8].upper()}"
@@ -262,7 +262,7 @@ def ticket_create(request):
             
             messages.error(request, first_line or err_msg)
 
-    return redirect(f"/tickets/?role={role}&username={username}")
+    return redirect(f"/my-tickets/?role={role}&username={username}")
 
 
 def ticket_update(request, ticket_id):
@@ -271,7 +271,7 @@ def ticket_update(request, ticket_id):
 
     if role != 'admin':
         messages.error(request, "Hanya Admin yang dapat mengubah tiket.")
-        return redirect(f"/tickets/?role={role}&username={username}")
+        return redirect(f"/my-tickets/?role={role}&username={username}")
 
     if request.method == "POST":
         status = request.POST.get("status")
@@ -305,7 +305,7 @@ def ticket_update(request, ticket_id):
                     first_line = first_line[len(prefix):].strip()
             messages.error(request, first_line or err_msg)
 
-    return redirect(f"/tickets/?role={role}&username={username}")
+    return redirect(f"/my-tickets/?role={role}&username={username}")
 
 
 def ticket_delete(request, ticket_id):
@@ -314,7 +314,7 @@ def ticket_delete(request, ticket_id):
 
     if role != 'admin':
         messages.error(request, "Hanya Admin yang dapat menghapus tiket.")
-        return redirect(f"/tickets/?role={role}&username={username}")
+        return redirect(f"/my-tickets/?role={role}&username={username}")
 
     if request.method == "POST":
         try:
@@ -333,4 +333,4 @@ def ticket_delete(request, ticket_id):
                     first_line = first_line[len(prefix):].strip()
             messages.error(request, first_line or err_msg)
 
-    return redirect(f"/tickets/?role={role}&username={username}")
+    return redirect(f"/my-tickets/?role={role}&username={username}")

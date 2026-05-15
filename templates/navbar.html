@@ -110,8 +110,8 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'tickets:tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'tickets:tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
           </li>
           <li class="nav-item dropdown nav-dropdown">
@@ -144,8 +144,8 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Tiket</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'tickets:tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
-              <li><a class="dropdown-item" href="{% url 'tickets:tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Manajemen Tiket</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket (Aset)</a></li>
             </ul>
           </li>
           <li class="nav-item">
@@ -162,7 +162,7 @@
           <li class="nav-item dropdown nav-dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button">Milik Saya</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'tickets:tickets' %}?role={{ role }}">Tiket Saya</a></li>
+              <li><a class="dropdown-item" href="{% url 'tickets:my-tickets' %}?role={{ role }}">Tiket Saya</a></li>
               <li><a class="dropdown-item" href="{% url 'orders:semua_order' %}?role={{ role }}">Pesanan</a></li>
             </ul>
           </li>

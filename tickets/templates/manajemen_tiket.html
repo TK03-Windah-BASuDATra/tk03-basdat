@@ -266,7 +266,7 @@
         const status = card.getAttribute('data-status');
         const seatId = card.getAttribute('data-seat-id');
 
-        document.getElementById('updateForm').action = `/tickets/update/${id}/` + roleParam;
+        document.getElementById('updateForm').action = `/my-tickets/update/${id}/` + roleParam;
         document.getElementById('updCode').value = code;
         document.getElementById('updStatus').value = status;
         
@@ -282,7 +282,7 @@
       btn.addEventListener('click', function() {
         const card = this.closest('.ticket-card');
         const id = card.getAttribute('data-id');
-        document.getElementById('deleteForm').action = `/tickets/delete/${id}/` + roleParam;
+        document.getElementById('deleteForm').action = `/my-tickets/delete/${id}/` + roleParam;
       });
     });
 
