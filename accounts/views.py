@@ -32,12 +32,6 @@ def _clear_reg_session(request):
 
 
 def _database_error_message(exc):
-    cause = getattr(exc, '__cause__', None)
-    diag = getattr(cause, 'diag', None)
-    primary = getattr(diag, 'message_primary', None)
-    if primary:
-        return primary
-
     message = str(exc).strip()
     if not message:
         return 'Terjadi kesalahan database.'
@@ -60,37 +54,11 @@ def _render_register_error_step1(request, message, username='', page_title='Daft
     })
 
 
-def _validate_username_from_db(username, exclude_user_id=None):
+def _validate_username_from_db(username):
+    # Function ini harus dibuat di PostgreSQL dan tersedia lewat search_path schema project.
+    # Validasi duplikat case-insensitive dan karakter username dilakukan oleh database.
     with connection.cursor() as cur:
-        cur.execute(
-            '''
-            SELECT
-                CASE
-                    WHEN %s !~ '^[a-zA-Z0-9]+$'
-                        THEN 'Username "' || %s || '" hanya boleh mengandung huruf dan angka tanpa simbol atau spasi.'
-                    WHEN EXISTS (
-                        SELECT 1
-                        FROM user_account ua
-                        WHERE LOWER(ua.username) = LOWER(%s)
-                        AND (%s::uuid IS NULL OR ua.user_id IS DISTINCT FROM %s::uuid)
-                    )
-                        THEN 'Username "' || %s || '" sudah terdaftar, gunakan username lain.'
-                    ELSE NULL
-                END AS error_message
-            ''',
-            [
-                username,
-                username,
-                username,
-                exclude_user_id,
-                exclude_user_id,
-                username,
-            ],
-        )
-        row = cur.fetchone()
-
-    if row and row[0]:
-        raise DatabaseError(row[0])
+        cur.execute('SELECT validate_username(%s, NULL::uuid)', [username])
 
 
 def _role_id_for(cur, role):
