@@ -619,6 +619,7 @@ INSERT INTO has_relationship (seat_id, ticket_id) VALUES
 -- 2. Cek username hanya boleh huruf & angka
 -- ================================================
 
+-- Fungsi helper (dipanggil Django DAN trigger)
 CREATE OR REPLACE FUNCTION windah_basudatra.validate_username(
     p_username VARCHAR,
     p_exclude_id UUID
@@ -639,10 +640,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Pasang trigger ke tabel user_account
-CREATE OR REPLACE TRIGGER trg_check_username
-BEFORE INSERT ON windah_basudatra.user_account
-FOR EACH ROW EXECUTE FUNCTION validate_username();
+-- Fungsi trigger (wrapper, no args, returns TRIGGER)
+CREATE OR REPLACE FUNCTION windah_basudatra.trg_validate_username()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM windah_basudatra.validate_username(NEW.username, NEW.user_id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Pasang trigger
+DROP TRIGGER IF EXISTS trg_check_username ON windah_basudatra.user_account;
+CREATE TRIGGER trg_check_username
+BEFORE INSERT OR UPDATE ON windah_basudatra.user_account
+FOR EACH ROW EXECUTE FUNCTION windah_basudatra.trg_validate_username();
 
 
 -- ============================================================
