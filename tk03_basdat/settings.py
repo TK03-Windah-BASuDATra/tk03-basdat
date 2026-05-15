@@ -22,15 +22,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-u-a9h(u9yvvd!!jk=(cg30mejmczb0uaf&rj!u3=79ozal%j89'
-
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SECURITY WARNING: keep the secret key used in production secret!
+if PRODUCTION:
+    SECRET_KEY = os.getenv('SECRET_KEY', '')
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY environment variable is required in production")
+else:
+    SECRET_KEY = 'django-insecure-u-a9h(u9yvvd!!jk=(cg30mejmczb0uaf&rj!u3=79ozal%j89'
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = not PRODUCTION
+
+ALLOWED_HOSTS_STR = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',')]
 
 
 # Application definition
@@ -59,6 +65,7 @@ LOGOUT_REDIRECT_URL = "login"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -92,20 +99,32 @@ WSGI_APPLICATION = 'tk03_basdat.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Database configuration
-    # Production: gunakan PostgreSQL dengan kredensial dari environment variables
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-        'OPTIONS': {
-            'options': f"-c search_path={os.getenv('SCHEMA')}"
+if os.getenv('DATABASE_URL'):
+    # Parse DATABASE_URL for production (Render provides this)
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # NeonDB pooled connections reject search_path in connection options
+    # We'll set the schema in a signal handler after migration
+    if 'OPTIONS' in DATABASES['default']:
+        DATABASES['default']['OPTIONS'].pop('options', None)
+else:
+    # Development: gunakan individual environment variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
         }
     }
-}
     
 
 

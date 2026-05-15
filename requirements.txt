@@ -6,3 +6,4 @@ requests
 urllib3
 python-dotenv
 django-widget-tweaks
+dj-database-url

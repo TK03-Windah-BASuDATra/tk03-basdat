@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: tk03-basdat
+    runtime: python
+    runtimeVersion: "3.12"
+    buildCommand: bash build.sh
+    startCommand: gunicorn tk03_basdat.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PRODUCTION
+        value: "true"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: yourdomain.onrender.com
+      - key: SCHEMA
+        value: windah_basudatra
+      - key: PYTHON_VERSION
+        value: "3.12"
+    # Connect NeonDB database
+    databases:
+      - name: neondb
+        plan: starter
+        # Note: If connecting to external NeonDB, use environment variables instead
