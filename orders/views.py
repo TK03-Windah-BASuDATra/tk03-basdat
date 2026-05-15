@@ -195,40 +195,28 @@ def checkout(request, event_id):
                     cur.execute(
                         """
                         SELECT p.promotion_id, p.promo_code, p.discount_type,
-                               p.discount_value, p.usage_limit,
-                               COUNT(op.order_promotion_id) AS used_count,
-                               p.start_date, p.end_date
+                               p.discount_value
                         FROM windah_basudatra.promotion p
-                        LEFT JOIN windah_basudatra.order_promotion op
-                               ON op.promotion_id = p.promotion_id
                         WHERE p.promo_code = %s
-                        GROUP BY p.promotion_id
                         """,
                         [promo_code],
                     )
                     promo_row = cur.fetchone()
 
                 if not promo_row:
-                    promo_error = f'ERROR: Promotion dengan kode "{promo_code}" tidak ditemukan.'
+                    promo_error = f'Promotion dengan kode "{promo_code}" tidak ditemukan.'
                 else:
-                    p_id, p_code, p_type, p_value, p_limit, p_used, p_start, p_end = promo_row
-                    if p_used >= p_limit:
-                        promo_error = f'ERROR: Promotion "{p_code}" telah mencapai batas maksimum penggunaan.'
+                    p_id, p_code, p_type, p_value = promo_row
+                    promo_obj = {
+                        "promotion_id": str(p_id),
+                        "promo_code":   p_code,
+                        "type":         p_type,
+                        "value":        float(p_value),
+                    }
+                    if p_type == "PERCENTAGE":
+                        promo_success = f'Promo "{p_code}" berhasil diterapkan! Diskon {float(p_value):.0f}%.'
                     else:
-                        event_date = event["event_date_raw"].date() if event["event_date_raw"] else None
-                        if event_date and not (p_start <= event_date <= p_end):
-                            promo_error = f'ERROR: Promotion "{p_code}" tidak berlaku untuk tanggal event ini ({event_date}, berlaku {p_start} s.d. {p_end}).'
-                        else:
-                            promo_obj = {
-                                "promotion_id": str(p_id),
-                                "promo_code":   p_code,
-                                "type":         p_type,
-                                "value":        float(p_value),
-                            }
-                            if p_type == "PERCENTAGE":
-                                promo_success = f'Promo "{p_code}" valid! Diskon {float(p_value):.0f}%.'
-                            else:
-                                promo_success = f'Promo "{p_code}" valid! Diskon Rp {float(p_value):,.0f}.'
+                        promo_success = f'Promo "{p_code}" berhasil diterapkan! Diskon Rp {float(p_value):,.0f}.'
             else:
                 promo_error = "Masukkan kode promo terlebih dahulu."
 
@@ -288,37 +276,24 @@ def checkout(request, event_id):
                     base_total  = unit_price * quantity
                     discount    = 0
 
-                    # Validasi dan hitung diskon promo
+                    # Ambil data promo untuk kalkulasi diskon (validasi diserahkan ke trigger)
                     promo_id_final = None
                     if promo_code_final:
                         with connection.cursor() as cur:
                             cur.execute(
                                 """
-                                SELECT p.promotion_id, p.promo_code, p.discount_type,
-                                       p.discount_value, p.usage_limit,
-                                       COUNT(op.order_promotion_id) AS used_count,
-                                       p.start_date, p.end_date
+                                SELECT p.promotion_id, p.discount_type, p.discount_value
                                 FROM windah_basudatra.promotion p
-                                LEFT JOIN windah_basudatra.order_promotion op
-                                       ON op.promotion_id = p.promotion_id
                                 WHERE p.promo_code = %s
-                                GROUP BY p.promotion_id
                                 """,
                                 [promo_code_final],
                             )
                             p_row = cur.fetchone()
 
                         if not p_row:
-                            raise Exception(f'ERROR: Promotion dengan kode "{promo_code_final}" tidak ditemukan.')
+                            raise Exception(f'Promotion dengan kode "{promo_code_final}" tidak ditemukan.')
 
-                        p_id, p_code, p_type, p_value, p_limit, p_used, p_start, p_end = p_row
-                        if p_used >= p_limit:
-                            raise Exception(f'ERROR: Promotion "{p_code}" telah mencapai batas maksimum penggunaan.')
-
-                        event_date = event["event_date_raw"].date() if event["event_date_raw"] else None
-                        if event_date and not (p_start <= event_date <= p_end):
-                            raise Exception(f'ERROR: Promotion "{p_code}" tidak berlaku untuk tanggal event ini ({event_date}, berlaku {p_start} s.d. {p_end}).')
-
+                        p_id, p_type, p_value = p_row
                         promo_id_final = str(p_id)
                         if p_type == "PERCENTAGE":
                             discount = base_total * (float(p_value) / 100)
