@@ -655,12 +655,9 @@ CREATE TRIGGER trg_check_username
 BEFORE INSERT OR UPDATE ON windah_basudatra.user_account
 FOR EACH ROW EXECUTE FUNCTION windah_basudatra.trg_validate_username();
 
-
 -- ============================================================
 -- TRIGGER 2
 -- ============================================================
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- 1) Trigger: mencegah duplikasi nama venue dalam kota yang sama (ignore case)
 CREATE OR REPLACE FUNCTION trg_validate_unique_venue_name_city()
 RETURNS trigger AS $$
@@ -671,8 +668,8 @@ BEGIN
     INTO existing_id
     FROM venue v
     WHERE LOWER(v.venue_name) = LOWER(NEW.venue_name)
-      AND LOWER(v.city) = LOWER(NEW.city)
-      AND v.venue_id <> COALESCE(NEW.venue_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    AND LOWER(v.city) = LOWER(NEW.city)
+    AND v.venue_id <> COALESCE(NEW.venue_id, '00000000-0000-0000-0000-000000000000'::uuid)
     LIMIT 1;
 
     IF existing_id IS NOT NULL THEN
@@ -698,7 +695,7 @@ BEGIN
         SELECT 1
         FROM event e
         WHERE e.venue_id = OLD.venue_id
-          AND e.event_datetime >= NOW()
+        AND e.event_datetime >= NOW()
     ) THEN
         RAISE EXCEPTION 'Venue ''%'' masih memiliki event aktif sehingga tidak dapat dihapus.',
             OLD.venue_name;
@@ -713,61 +710,6 @@ CREATE TRIGGER prevent_delete_venue_with_active_event
 BEFORE DELETE ON venue
 FOR EACH ROW
 EXECUTE FUNCTION trg_prevent_delete_venue_with_active_event();
-
--- 3) Stored function opsional untuk CUD Venue.
--- Backend boleh memanggil function ini supaya operasi tulis tetap melalui SQL/PostgreSQL.
-CREATE OR REPLACE FUNCTION sp_create_venue(
-    p_venue_name varchar,
-    p_capacity integer,
-    p_address text,
-    p_city varchar
-)
-RETURNS uuid AS $$
-DECLARE
-    new_id uuid;
-BEGIN
-    INSERT INTO venue (venue_id, venue_name, capacity, address, city)
-    VALUES (gen_random_uuid(), p_venue_name, p_capacity, p_address, p_city)
-    RETURNING venue_id INTO new_id;
-
-    RETURN new_id;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION sp_update_venue(
-    p_venue_id uuid,
-    p_venue_name varchar,
-    p_capacity integer,
-    p_address text,
-    p_city varchar
-)
-RETURNS void AS $$
-BEGIN
-    UPDATE venue
-    SET venue_name = p_venue_name,
-        capacity = p_capacity,
-        address = p_address,
-        city = p_city
-    WHERE venue_id = p_venue_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Venue dengan ID % tidak ditemukan.', p_venue_id;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION sp_delete_venue(p_venue_id uuid)
-RETURNS void AS $$
-BEGIN
-    DELETE FROM venue
-    WHERE venue_id = p_venue_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Venue dengan ID % tidak ditemukan.', p_venue_id;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
 
 -- ============================================================
 -- TRIGGER 3
@@ -820,7 +762,6 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trg_validate_event_artist
 BEFORE INSERT ON windah_basudatra.event_artist
 FOR EACH ROW EXECUTE FUNCTION windah_basudatra.validate_event_artist();
-
 
 -- Stored Function: Menampilkan sisa kuota ticket category berdasarkan event_id
 CREATE OR REPLACE FUNCTION get_ticket_availability(p_event_id TEXT)
