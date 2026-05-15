@@ -727,22 +727,57 @@ def venue_delete(request):
 
     return render(request, "venue_confirm_delete.html", {"venue": venue, "venue_id": venue_id, "role": role})
 
+def _artist_names_from_events(events):
+    artist_names = set()
+
+    for event in events:
+        if not event.artists or event.artists == "-":
+            continue
+
+        for artist_name in event.artists.split(","):
+            artist_name = artist_name.strip()
+            if artist_name and artist_name != "-":
+                artist_names.add(artist_name)
+
+    return sorted(artist_names, key=str.lower)
+
+def _event_has_artist(event, selected_artist):
+    selected_artist = selected_artist.strip().lower()
+
+    if not selected_artist or not event.artists:
+        return False
+
+    return any(
+        artist_name.strip().lower() == selected_artist
+        for artist_name in event.artists.split(",")
+    )
+
 def event_list(request):
     role = _current_role(request)
-    events = _load_events()
+    all_events = _load_events()
+    events = list(all_events)
 
     q = request.GET.get("q", "").strip().lower()
     venue_id = request.GET.get("venue", "").strip()
-    artist = request.GET.get("artist", "").strip().lower()
+    artist = request.GET.get("artist", "").strip()
 
     if q:
         events = [e for e in events if q in e.event_title.lower() or q in e.artists.lower()]
     if venue_id:
         events = [e for e in events if e.venue and e.venue.venue_id == venue_id]
     if artist:
-        events = [e for e in events if artist in e.artists.lower()]
+        events = [e for e in events if _event_has_artist(e, artist)]
 
-    return render(request, "event_list.html", {"events": events, "venues": _load_venues(), "role": role})
+    return render(
+        request,
+        "event_list.html",
+        {
+            "events": events,
+            "venues": _load_venues(),
+            "artist_choices": _artist_names_from_events(all_events),
+            "role": role,
+        },
+    )
 
 def event_manage_list(request):
     role = _current_role(request)
