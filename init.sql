@@ -865,15 +865,11 @@ $$ LANGUAGE plpgsql;
 
 
 -- ============================================================
--- TRIGGER 4
+-- TRIGGER 4 — Validasi promotion saat digunakan ke order
 -- ============================================================
--- ============================================================
--- TRIGGER untuk validasi promotion
--- ============================================================
-
+ 
 SET search_path TO windah_basudatra;
-
--- 1. Function: validasi promotion saat digunakan ke order
+ 
 CREATE OR REPLACE FUNCTION windah_basudatra.validate_promotion_on_order()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -884,27 +880,23 @@ DECLARE
     v_start_date    DATE;
     v_end_date      DATE;
 BEGIN
-    -- Ambil data promotion
     SELECT promo_code, usage_limit, start_date, end_date
     INTO v_promo_code, v_usage_limit, v_start_date, v_end_date
     FROM windah_basudatra.promotion
     WHERE promotion_id = NEW.promotion_id;
-
-    -- Cek: promotion terdaftar
+ 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'ERROR: Promotion dengan ID % tidak ditemukan.', NEW.promotion_id;
     END IF;
-
-    -- Cek: usage limit
+ 
     SELECT COUNT(*) INTO v_used_count
     FROM windah_basudatra.order_promotion
     WHERE promotion_id = NEW.promotion_id;
-
+ 
     IF v_used_count >= v_usage_limit THEN
         RAISE EXCEPTION 'ERROR: Promotion "%" telah mencapai batas maksimum penggunaan.', v_promo_code;
     END IF;
-
-    -- Ambil event_datetime dari order → ticket → ticket_category → event
+ 
     SELECT e.event_datetime INTO v_event_date
     FROM windah_basudatra."order" o
     JOIN windah_basudatra.ticket t           ON t.order_id = o.order_id
@@ -912,27 +904,98 @@ BEGIN
     JOIN windah_basudatra.event e            ON e.event_id = tc.event_id
     WHERE o.order_id = NEW.order_id
     LIMIT 1;
-
-    -- Cek: tanggal event dalam periode berlaku promotion
+ 
     IF v_event_date IS NOT NULL THEN
         IF v_event_date::DATE < v_start_date OR v_event_date::DATE > v_end_date THEN
             RAISE EXCEPTION 'ERROR: Promotion "%" tidak berlaku untuk tanggal event ini.', v_promo_code;
         END IF;
     END IF;
-
+ 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-
--- 2. Trigger: dijalankan sebelum INSERT ke order_promotion
+ 
 DROP TRIGGER IF EXISTS trg_validate_promotion_on_order
     ON windah_basudatra.order_promotion;
-
+ 
 CREATE TRIGGER trg_validate_promotion_on_order
     BEFORE INSERT ON windah_basudatra.order_promotion
     FOR EACH ROW
     EXECUTE FUNCTION windah_basudatra.validate_promotion_on_order();
+
+-- ============================================================
+-- Dipanggil saat user menekan "Apply Promo" di checkout
+-- ============================================================
+CREATE OR REPLACE FUNCTION windah_basudatra.validate_promo_for_event(
+    p_promo_code VARCHAR,
+    p_event_id   TEXT
+)
+RETURNS TABLE (
+    promotion_id   UUID,
+    promo_code     VARCHAR,
+    discount_type  VARCHAR,
+    discount_value NUMERIC
+) AS $$
+DECLARE
+    v_event_uuid   UUID;
+    v_promo        RECORD;
+    v_used_count   INTEGER;
+    v_event_date   DATE;
+BEGIN
+    -- Cast event_id ke UUID
+    BEGIN
+        v_event_uuid := p_event_id::UUID;
+    EXCEPTION WHEN invalid_text_representation THEN
+        RAISE EXCEPTION 'Event dengan ID % tidak ditemukan.', p_event_id;
+    END;
+
+    -- Cek event ada
+    IF NOT EXISTS (
+        SELECT 1 FROM windah_basudatra.event WHERE event_id = v_event_uuid
+    ) THEN
+        RAISE EXCEPTION 'Event dengan ID % tidak ditemukan.', p_event_id;
+    END IF;
+
+    -- Ambil data promo
+    SELECT p.promotion_id, p.promo_code, p.discount_type,
+           p.discount_value, p.usage_limit, p.start_date, p.end_date
+    INTO v_promo
+    FROM windah_basudatra.promotion p
+    WHERE UPPER(p.promo_code) = UPPER(p_promo_code);
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'ERROR: Promotion dengan ID "%" tidak ditemukan.', p_promo_code;
+    END IF;
+
+    -- Cek usage limit
+    SELECT COUNT(*) INTO v_used_count
+    FROM windah_basudatra.order_promotion op
+    WHERE op.promotion_id = v_promo.promotion_id;
+
+    IF v_used_count >= v_promo.usage_limit THEN
+        RAISE EXCEPTION 'ERROR: Promotion "%" telah mencapai batas maksimum penggunaan.',
+            v_promo.promo_code;
+    END IF;
+
+    -- Ambil tanggal event
+    SELECT e.event_datetime::DATE INTO v_event_date
+    FROM windah_basudatra.event e
+    WHERE e.event_id = v_event_uuid;
+
+    -- Cek tanggal promo berlaku untuk event ini
+    IF v_event_date < v_promo.start_date OR v_event_date > v_promo.end_date THEN
+        RAISE EXCEPTION 'ERROR: Promotion "%" tidak berlaku untuk tanggal event ini.',
+            v_promo.promo_code;
+    END IF;
+
+    -- Semua valid — return data promo
+    RETURN QUERY
+    SELECT v_promo.promotion_id,
+           v_promo.promo_code,
+           v_promo.discount_type,
+           v_promo.discount_value;
+END;
+$$ LANGUAGE plpgsql;
 
 
 -- ============================================================

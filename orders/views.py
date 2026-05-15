@@ -191,21 +191,20 @@ def checkout(request, event_id):
 
         if "apply_promo" in request.POST:
             if promo_code:
-                with connection.cursor() as cur:
-                    cur.execute(
-                        """
-                        SELECT p.promotion_id, p.promo_code, p.discount_type,
-                               p.discount_value
-                        FROM windah_basudatra.promotion p
-                        WHERE p.promo_code = %s
-                        """,
-                        [promo_code],
-                    )
-                    promo_row = cur.fetchone()
+                try:
+                    # Validasi promo sepenuhnya dilakukan oleh stored function di DB.
+                    # Jika gagal (usage habis / tanggal tidak sesuai), DB akan RAISE EXCEPTION
+                    # dan pesan error langsung diambil dari sana — tidak ada logic di backend.
+                    with connection.cursor() as cur:
+                        cur.execute(
+                            """
+                            SELECT promotion_id, promo_code, discount_type, discount_value
+                            FROM windah_basudatra.validate_promo_for_event(%s, %s)
+                            """,
+                            [promo_code, str(event_id)],
+                        )
+                        promo_row = cur.fetchone()
 
-                if not promo_row:
-                    promo_error = f'Promotion dengan kode "{promo_code}" tidak ditemukan.'
-                else:
                     p_id, p_code, p_type, p_value = promo_row
                     promo_obj = {
                         "promotion_id": str(p_id),
@@ -217,17 +216,24 @@ def checkout(request, event_id):
                         promo_success = f'Promo "{p_code}" berhasil diterapkan! Diskon {float(p_value):.0f}%.'
                     else:
                         promo_success = f'Promo "{p_code}" berhasil diterapkan! Diskon Rp {float(p_value):,.0f}.'
+
+                except Exception as e:
+                    # Ambil pesan langsung dari RAISE EXCEPTION di stored function
+                    raw = ""
+                    if hasattr(e, "__cause__") and e.__cause__ is not None:
+                        raw = str(e.__cause__.args[0]) if e.__cause__.args else str(e.__cause__)
+                    if not raw:
+                        raw = e.args[0] if e.args else str(e)
+                    promo_error = raw.strip().splitlines()[0]
             else:
                 promo_error = "Masukkan kode promo terlebih dahulu."
 
         elif "place_order" in request.POST:
-            # Ambil data form
             category_id = request.POST.get("category_id", "").strip()
             quantity    = int(request.POST.get("quantity", 1))
             seat_ids    = request.POST.get("seat_ids", "").strip()
             promo_code_final = request.POST.get("promo_code", "").strip()
 
-            # Ambil customer_id dari username — di luar transaksi agar error jelas
             with connection.cursor() as cur:
                 cur.execute(
                     """
@@ -241,10 +247,8 @@ def checkout(request, event_id):
                 cust_row = cur.fetchone()
 
             if not cust_row:
-                if not username:
-                    messages.error(request, "Sesi tidak valid, silakan login ulang.")
-                else:
-                    messages.error(request, f'Akun "{username}" tidak terdaftar sebagai customer.')
+                messages.error(request, "Sesi tidak valid, silakan login ulang." if not username
+                            else f'Akun "{username}" tidak terdaftar sebagai customer.')
                 return render(request, "checkout.html", {
                     "event": event, "categories": categories, "seats": seats,
                     "promo_code": promo_code_final, "promo_error": promo_error,
@@ -260,7 +264,7 @@ def checkout(request, event_id):
 
                 with transaction.atomic():
 
-                    # Hitung total
+                    # Hitung harga dasar
                     with connection.cursor() as cur:
                         cur.execute(
                             "SELECT price FROM windah_basudatra.ticket_category WHERE category_id = %s",
@@ -272,41 +276,38 @@ def checkout(request, event_id):
                         messages.error(request, "Kategori tiket tidak valid.")
                         return redirect(_build_url("orders:checkout", role, username, event_id))
 
-                    unit_price  = float(price_row[0])
-                    base_total  = unit_price * quantity
-                    discount    = 0
-
-                    # Ambil data promo untuk kalkulasi diskon (validasi diserahkan ke trigger)
+                    unit_price = float(price_row[0])
+                    base_total = unit_price * quantity
+                    discount   = 0
                     promo_id_final = None
+
+                    # ── Validasi & hitung diskon via stored function ──────────────
                     if promo_code_final:
                         with connection.cursor() as cur:
                             cur.execute(
                                 """
-                                SELECT p.promotion_id, p.discount_type, p.discount_value
-                                FROM windah_basudatra.promotion p
-                                WHERE p.promo_code = %s
+                                SELECT promotion_id, promo_code, discount_type, discount_value
+                                FROM windah_basudatra.validate_promo_for_event(%s, %s)
                                 """,
-                                [promo_code_final],
+                                [promo_code_final, str(event_id)],
                             )
                             p_row = cur.fetchone()
 
-                        if not p_row:
-                            raise Exception(f'Promotion dengan kode "{promo_code_final}" tidak ditemukan.')
-
-                        p_id, p_type, p_value = p_row
-                        promo_id_final = str(p_id)
-                        if p_type == "PERCENTAGE":
-                            discount = base_total * (float(p_value) / 100)
-                        else:
-                            discount = float(p_value)
+                        if p_row:
+                            p_id, p_code, p_type, p_value = p_row
+                            promo_id_final = str(p_id)
+                            if p_type == "PERCENTAGE":
+                                discount = base_total * (float(p_value) / 100)
+                            else:
+                                discount = float(p_value)
 
                     total_amount = max(base_total - discount, 0)
 
-                    # Buat ORDER — simpan sebagai UTC, tampilan dikonversi ke WIB via SQL
+                    # Buat ORDER
                     from datetime import datetime, timezone
                     order_date_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+                    new_order_id   = str(uuid_lib.uuid4())
 
-                    new_order_id = str(uuid_lib.uuid4())
                     with connection.cursor() as cur:
                         cur.execute(
                             """
@@ -333,7 +334,7 @@ def checkout(request, event_id):
                             )
                         ticket_ids.append(ticket_id)
 
-                    # Assign kursi (jika RESERVED_SEATING dan kursi dipilih)
+                    # Assign kursi
                     if seat_ids:
                         selected_seats = [s.strip() for s in seat_ids.split(",") if s.strip()]
                         for seat_id, ticket_id in zip(selected_seats, ticket_ids):
@@ -357,7 +358,7 @@ def checkout(request, event_id):
                             [quantity, category_id],
                         )
 
-                    # Simpan ORDER_PROMOTION — trigger akan validasi di sini
+                    # ── INSERT order_promotion → trigger 4 akan validasi ulang ───
                     if promo_id_final:
                         with connection.cursor() as cur:
                             cur.execute(
@@ -373,24 +374,14 @@ def checkout(request, event_id):
                 return redirect(_build_url("orders:pesanan", role, username))
 
             except Exception as e:
-                # Ekstrak pesan: cek args PostgreSQL (django.db.utils.InternalError),
-                # lalu fallback ke str(e) untuk Exception biasa dari Python
                 raw = ""
                 if hasattr(e, "__cause__") and e.__cause__ is not None:
-                    # Django wraps psycopg2 error — pesan asli ada di __cause__.args[0]
                     raw = str(e.__cause__.args[0]) if e.__cause__.args else str(e.__cause__)
                 if not raw:
                     raw = e.args[0] if e.args else str(e)
 
-                raw = raw.strip()
-
-                # Trigger PostgreSQL: RAISE EXCEPTION 'ERROR: ...'
-                # Pesan sudah dimulai langsung dengan teks, misal: "ERROR: Promotion ..."
-                first_line = raw.splitlines()[0] if raw else ""
-                if first_line:
-                    promo_error = first_line
-                else:
-                    promo_error = "Terjadi kesalahan saat membuat pesanan."
+                first_line = raw.strip().splitlines()[0] if raw.strip() else ""
+                promo_error = first_line if first_line else "Terjadi kesalahan saat membuat pesanan."
 
     context = {
         "event":                event,
