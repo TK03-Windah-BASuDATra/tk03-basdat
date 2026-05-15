@@ -14,29 +14,29 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- DROP TABLES (reverse dependency order)
 --------------------------------------------------
 
--- DROP TABLE IF EXISTS has_relationship CASCADE;
--- DROP TABLE IF EXISTS ticket CASCADE;
--- DROP TABLE IF EXISTS order_promotion CASCADE;
--- DROP TABLE IF EXISTS promotion CASCADE;
--- DROP TABLE IF EXISTS "order" CASCADE;
--- DROP TABLE IF EXISTS ticket_category CASCADE;
--- DROP TABLE IF EXISTS event_artist CASCADE;
--- DROP TABLE IF EXISTS artist CASCADE;
--- DROP TABLE IF EXISTS event CASCADE;
--- DROP TABLE IF EXISTS seat CASCADE;
--- DROP TABLE IF EXISTS venue CASCADE;
--- DROP TABLE IF EXISTS organizer CASCADE;
--- DROP TABLE IF EXISTS customer CASCADE;
--- DROP TABLE IF EXISTS account_role CASCADE;
--- DROP TABLE IF EXISTS role CASCADE;
--- DROP TABLE IF EXISTS user_account CASCADE;
+DROP TABLE IF EXISTS has_relationship CASCADE;
+DROP TABLE IF EXISTS ticket CASCADE;
+DROP TABLE IF EXISTS order_promotion CASCADE;
+DROP TABLE IF EXISTS promotion CASCADE;
+DROP TABLE IF EXISTS "order" CASCADE;
+DROP TABLE IF EXISTS ticket_category CASCADE;
+DROP TABLE IF EXISTS event_artist CASCADE;
+DROP TABLE IF EXISTS artist CASCADE;
+DROP TABLE IF EXISTS event CASCADE;
+DROP TABLE IF EXISTS seat CASCADE;
+DROP TABLE IF EXISTS venue CASCADE;
+DROP TABLE IF EXISTS organizer CASCADE;
+DROP TABLE IF EXISTS customer CASCADE;
+DROP TABLE IF EXISTS account_role CASCADE;
+DROP TABLE IF EXISTS role CASCADE;
+DROP TABLE IF EXISTS user_account CASCADE;
 
 
 --------------------------------------------------
 -- USER_ACCOUNT
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS user_account (
+CREATE TABLE user_account (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS user_account (
 -- ROLE
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS role (
+CREATE TABLE role (
     role_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     role_name VARCHAR(50) UNIQUE NOT NULL
 );
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS role (
 -- ACCOUNT_ROLE
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS account_role (
+CREATE TABLE account_role (
     role_id UUID,
     user_id UUID,
 
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS account_role (
 -- CUSTOMER
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS customer (
+CREATE TABLE customer (
     customer_id  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name    VARCHAR(100) NOT NULL,
     phone_number VARCHAR(20),
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS customer (
 -- ORGANIZER
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS organizer (
+CREATE TABLE organizer (
     organizer_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organizer_name VARCHAR(100) NOT NULL,
     contact_email  VARCHAR(100),
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS organizer (
 -- VENUE
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS venue (
+CREATE TABLE venue (
     venue_id      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     venue_name    VARCHAR(100) NOT NULL,
     capacity      INTEGER NOT NULL CHECK(capacity > 0),
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS venue (
 -- SEAT
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS seat (
+CREATE TABLE seat (
     seat_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     section VARCHAR(50) NOT NULL,
     seat_number VARCHAR(10) NOT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS seat (
 -- EVENT
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS event (
+CREATE TABLE event (
     event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_datetime TIMESTAMP NOT NULL,
     event_title VARCHAR(200) NOT NULL,
@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS event (
 -- ARTIST
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS artist (
+CREATE TABLE artist (
     artist_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     genre VARCHAR(100)
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS artist (
 -- EVENT_ARTIST
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS event_artist (
+CREATE TABLE event_artist (
     event_id UUID,
     artist_id UUID,
     role VARCHAR(100),
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS event_artist (
 -- TICKET_CATEGORY
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS ticket_category (
+CREATE TABLE ticket_category (
     category_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     category_name VARCHAR(50) NOT NULL,
     quota INTEGER NOT NULL CHECK(quota > 0),
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS ticket_category (
 -- "ORDER"
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS "order" (
+CREATE TABLE "order" (
     order_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_date TIMESTAMP NOT NULL,
     payment_status VARCHAR(20) NOT NULL,
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS "order" (
 -- PROMOTION
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS promotion (
+CREATE TABLE promotion (
     promotion_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     promo_code VARCHAR(50) UNIQUE NOT NULL,
@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS promotion (
 -- ORDER_PROMOTION
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS order_promotion (
+CREATE TABLE order_promotion (
     order_promotion_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     promotion_id UUID NOT NULL,
@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS order_promotion (
 -- TICKET
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS ticket (
+CREATE TABLE ticket (
     ticket_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     ticket_code VARCHAR(100)
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS ticket (
 -- HAS_RELATIONSHIP
 --------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS has_relationship (
+CREATE TABLE has_relationship (
     seat_id UUID,
     ticket_id UUID,
 
@@ -331,8 +331,7 @@ INSERT INTO user_account (user_id, username, password) VALUES
 ('00000000-0000-0000-0000-000000000009', 'orgnightfest',  'hashed_pw_009'),
 ('00000000-0000-0000-0000-000000000010', 'orgeventpro',   'hashed_pw_010'),
 ('00000000-0000-0000-0000-000000000011', 'gracelee',      'hashed_pw_011'),
-('00000000-0000-0000-0000-000000000012', 'henrytan',      'hashed_pw_012')
-ON CONFLICT (user_id) DO NOTHING;
+('00000000-0000-0000-0000-000000000012', 'henrytan',      'hashed_pw_012');
 
 
 -- ============================================================
@@ -341,8 +340,7 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO role (role_id, role_name) VALUES
 ('10000000-0000-0000-0000-000000000001', 'ADMIN'),
 ('10000000-0000-0000-0000-000000000002', 'CUSTOMER'),
-('10000000-0000-0000-0000-000000000003', 'ORGANIZER')
-ON CONFLICT (role_id) DO NOTHING;
+('10000000-0000-0000-0000-000000000003', 'ORGANIZER');
 
 
 -- ============================================================
@@ -367,8 +365,7 @@ INSERT INTO account_role (role_id, user_id) VALUES
 -- some users have multiple roles
 ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
 ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000011'),
-('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000012')
-ON CONFLICT (role_id, user_id) DO NOTHING;
+('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000012');
 
 
 -- ============================================================
@@ -380,8 +377,7 @@ INSERT INTO customer (customer_id, full_name, phone_number, contact_email, user_
 ('20000000-0000-0000-0000-000000000003', 'Carol White',  '083456789012', 'carol@example.com',  '00000000-0000-0000-0000-000000000003'),
 ('20000000-0000-0000-0000-000000000004', 'Dave Brown',   '084567890123', 'dave@example.com',   '00000000-0000-0000-0000-000000000004'),
 ('20000000-0000-0000-0000-000000000005', 'Eve Davis',    '085678901234', 'eve@example.com',    '00000000-0000-0000-0000-000000000005'),
-('20000000-0000-0000-0000-000000000006', 'Frank Miller', '086789012345', 'frank@example.com',  '00000000-0000-0000-0000-000000000006')
-ON CONFLICT (customer_id) DO NOTHING;
+('20000000-0000-0000-0000-000000000006', 'Frank Miller', '086789012345', 'frank@example.com',  '00000000-0000-0000-0000-000000000006');
 
 
 -- ============================================================
@@ -391,8 +387,7 @@ INSERT INTO organizer (organizer_id, organizer_name, contact_email, phone_number
 ('30000000-0000-0000-0000-000000000001', 'Soundwave Events', 'contact@soundwave.id', '02111111111', '00000000-0000-0000-0000-000000000007'),
 ('30000000-0000-0000-0000-000000000002', 'Stage Live Co.',   'info@stagelive.id',    '02122222222', '00000000-0000-0000-0000-000000000008'),
 ('30000000-0000-0000-0000-000000000003', 'Night Fest Org',   'hello@nightfest.id',   '02133333333', '00000000-0000-0000-0000-000000000009'),
-('30000000-0000-0000-0000-000000000004', 'EventPro Jakarta', 'support@eventpro.id',  '02144444444', '00000000-0000-0000-0000-000000000010')
-ON CONFLICT (organizer_id) DO NOTHING;
+('30000000-0000-0000-0000-000000000004', 'EventPro Jakarta', 'support@eventpro.id',  '02144444444', '00000000-0000-0000-0000-000000000010');
 
 
 -- ============================================================
@@ -403,8 +398,7 @@ INSERT INTO venue (venue_id, venue_name, capacity, address, city, tipe_seating) 
 ('40000000-0000-0000-0000-000000000002', 'Istora Senayan',            4000, 'Jl. Pintu Satu Senayan',           'Jakarta', 'RESERVED_SEATING'),
 ('40000000-0000-0000-0000-000000000003', 'Gelora Bung Karno Hall',    8000, 'Jl. Pintu X-XI Senayan',           'Jakarta', 'FREE_SEATING'),
 ('40000000-0000-0000-0000-000000000004', 'Balai Sarbini',             1500, 'Jl. Jend. Sudirman Kav. 1',        'Jakarta', 'RESERVED_SEATING'),
-('40000000-0000-0000-0000-000000000005', 'Tennis Indoor Senayan',     3000, 'Jl. Asia Afrika Pintu IX Senayan', 'Jakarta', 'FREE_SEATING')
-ON CONFLICT (venue_id) DO NOTHING;
+('40000000-0000-0000-0000-000000000005', 'Tennis Indoor Senayan',     3000, 'Jl. Asia Afrika Pintu IX Senayan', 'Jakarta', 'FREE_SEATING');
 
 -- ============================================================
 -- 7. SEAT (30 rows) — 6 seats per venue
@@ -444,8 +438,7 @@ INSERT INTO seat (seat_id, section, seat_number, row_number, venue_id) VALUES
 ('50000000-0000-0000-0000-000000000027', 'Regular', 'S001', 'B', '40000000-0000-0000-0000-000000000005'),
 ('50000000-0000-0000-0000-000000000028', 'Regular', 'S002', 'B', '40000000-0000-0000-0000-000000000005'),
 ('50000000-0000-0000-0000-000000000029', 'VVIP',    'S001', 'C', '40000000-0000-0000-0000-000000000005'),
-('50000000-0000-0000-0000-000000000030', 'VVIP',    'S002', 'C', '40000000-0000-0000-0000-000000000005')
-ON CONFLICT (seat_id) DO NOTHING;
+('50000000-0000-0000-0000-000000000030', 'VVIP',    'S002', 'C', '40000000-0000-0000-0000-000000000005');
 
 
 -- ============================================================
@@ -459,8 +452,7 @@ INSERT INTO artist (artist_id, name, genre) VALUES
 ('60000000-0000-0000-0000-000000000005', 'Sheila on 7',      'Pop Rock'),
 ('60000000-0000-0000-0000-000000000006', 'Dewa 19',          'Rock'),
 ('60000000-0000-0000-0000-000000000007', 'Rizky Febian',     'R&B'),
-('60000000-0000-0000-0000-000000000008', 'Hindia',           'Indie')
-ON CONFLICT (artist_id) DO NOTHING;
+('60000000-0000-0000-0000-000000000008', 'Hindia',           'Indie');
 
 
 -- ============================================================
@@ -475,8 +467,7 @@ INSERT INTO event (event_id, event_datetime, event_title, venue_id, organizer_id
 ('70000000-0000-0000-0000-000000000006', '2026-07-05 19:00:00'::timestamp, 'New Year Indie Bash',          '40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002'),
 ('70000000-0000-0000-0000-000000000007', '2026-08-15 20:00:00'::timestamp, 'Sheila on Seven - Tunggu Aku', '40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000003'),
 ('70000000-0000-0000-0000-000000000008', '2026-09-12 18:30:00'::timestamp, 'Dewa 19 Reunion Tour',         '40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000004'),
-('70000000-0000-0000-0000-000000000009', '2026-10-24 19:00:00'::timestamp, 'Hindia - Menari Dalam Badai',  '40000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000001')
-ON CONFLICT (event_id) DO NOTHING;
+('70000000-0000-0000-0000-000000000009', '2026-10-24 19:00:00'::timestamp, 'Hindia - Menari Dalam Badai',  '40000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000001');
 
 
 
@@ -495,8 +486,7 @@ INSERT INTO event_artist (event_id, artist_id, role) VALUES
 ('70000000-0000-0000-0000-000000000004', '60000000-0000-0000-0000-000000000003', 'Co-Headliner'),
 ('70000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000001', 'Guest Star'),
 ('70000000-0000-0000-0000-000000000005', '60000000-0000-0000-0000-000000000002', 'Guest Star'),
-('70000000-0000-0000-0000-000000000006', '60000000-0000-0000-0000-000000000008', 'Headliner')
-ON CONFLICT (event_id, artist_id) DO NOTHING;
+('70000000-0000-0000-0000-000000000006', '60000000-0000-0000-0000-000000000008', 'Headliner');
 
 
 -- ============================================================
@@ -524,8 +514,7 @@ INSERT INTO ticket_category (category_id, category_name, quota, price, event_id)
 ('80000000-0000-0000-0000-000000000019', 'VIP',    200,  1800000.00, '70000000-0000-0000-0000-000000000008'),
 ('80000000-0000-0000-0000-000000000020', 'Regular',500,   600000.00, '70000000-0000-0000-0000-000000000008'),
 ('80000000-0000-0000-0000-000000000021', 'VIP',    100,   900000.00, '70000000-0000-0000-0000-000000000009'),
-('80000000-0000-0000-0000-000000000022', 'Regular',300,   350000.00, '70000000-0000-0000-0000-000000000009')
-ON CONFLICT (category_id) DO NOTHING;
+('80000000-0000-0000-0000-000000000022', 'Regular',300,   350000.00, '70000000-0000-0000-0000-000000000009');
 
 
 
@@ -543,8 +532,7 @@ INSERT INTO promotion (promotion_id, promo_code, discount_type, discount_value, 
 ('90000000-0000-0000-0000-000000000006', 'SAVE100K',      'NOMINAL',   100000.00, '2026-05-15', '2026-07-15',  60),
 ('90000000-0000-0000-0000-000000000007', 'FESTPRO15',     'PERCENTAGE', 15.00,    '2026-06-01', '2026-08-31',  80),
 ('90000000-0000-0000-0000-000000000008', 'AGUSTUS75K',    'NOMINAL',    75000.00, '2026-07-01', '2026-09-30', 120),
-('90000000-0000-0000-0000-000000000009', 'YEARENDSALE25', 'PERCENTAGE', 25.00,    '2026-09-01', '2026-10-31',  40)
-ON CONFLICT (promotion_id) DO NOTHING;
+('90000000-0000-0000-0000-000000000009', 'YEARENDSALE25', 'PERCENTAGE', 25.00,    '2026-09-01', '2026-10-31',  40);
 
 
 -- ============================================================
@@ -566,8 +554,7 @@ INSERT INTO "order" (order_id, order_date, payment_status, total_amount, custome
 ('A0000000-0000-0000-0000-000000000013', '2026-04-25 09:00:00', 'FAILED',   450000.00, '20000000-0000-0000-0000-000000000001'),
 ('A0000000-0000-0000-0000-000000000014', '2026-04-27 14:00:00', 'PAID',    1300000.00, '20000000-0000-0000-0000-000000000002'),
 ('A0000000-0000-0000-0000-000000000015', '2026-04-29 11:00:00', 'PENDING',  900000.00, '20000000-0000-0000-0000-000000000004'),
-('A0000000-0000-0000-0000-000000000016', '2026-05-01 17:45:00', 'PAID',    2200000.00, '20000000-0000-0000-0000-000000000005')
-ON CONFLICT (order_id) DO NOTHING;
+('A0000000-0000-0000-0000-000000000016', '2026-05-01 17:45:00', 'PAID',    2200000.00, '20000000-0000-0000-0000-000000000005');
 
 
 -- ============================================================
@@ -578,8 +565,7 @@ INSERT INTO order_promotion (order_promotion_id, promotion_id, order_id) VALUES
 ('B0000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000002'),
 ('B0000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000003', 'A0000000-0000-0000-0000-000000000007'),
 ('B0000000-0000-0000-0000-000000000004', '90000000-0000-0000-0000-000000000005', 'A0000000-0000-0000-0000-000000000010'),
-('B0000000-0000-0000-0000-000000000005', '90000000-0000-0000-0000-000000000006', 'A0000000-0000-0000-0000-000000000012')
-ON CONFLICT (order_promotion_id) DO NOTHING;
+('B0000000-0000-0000-0000-000000000005', '90000000-0000-0000-0000-000000000006', 'A0000000-0000-0000-0000-000000000012');
 
 
 -- ============================================================
@@ -605,8 +591,7 @@ INSERT INTO ticket (ticket_id, ticket_code, category_id, order_id) VALUES
 ('C0000000-0000-0000-0000-000000000017', 'TKT-2025-0017', '80000000-0000-0000-0000-000000000010', 'A0000000-0000-0000-0000-000000000009'),
 ('C0000000-0000-0000-0000-000000000018', 'TKT-2025-0018', '80000000-0000-0000-0000-000000000012', 'A0000000-0000-0000-0000-000000000010'),
 ('C0000000-0000-0000-0000-000000000019', 'TKT-2025-0019', '80000000-0000-0000-0000-000000000014', 'A0000000-0000-0000-0000-000000000011'),
-('C0000000-0000-0000-0000-000000000020', 'TKT-2025-0020', '80000000-0000-0000-0000-000000000014', 'A0000000-0000-0000-0000-000000000012')
-ON CONFLICT (ticket_id) DO NOTHING;
+('C0000000-0000-0000-0000-000000000020', 'TKT-2025-0020', '80000000-0000-0000-0000-000000000014', 'A0000000-0000-0000-0000-000000000012');
 
 
 -- ============================================================
@@ -622,8 +607,7 @@ INSERT INTO has_relationship (seat_id, ticket_id) VALUES
 ('50000000-0000-0000-0000-000000000009', 'C0000000-0000-0000-0000-000000000003'),
 ('50000000-0000-0000-0000-000000000013', 'C0000000-0000-0000-0000-000000000007'),
 ('50000000-0000-0000-0000-000000000014', 'C0000000-0000-0000-0000-000000000016'),
-('50000000-0000-0000-0000-000000000019', 'C0000000-0000-0000-0000-000000000009')
-ON CONFLICT (seat_id, ticket_id) DO NOTHING;
+('50000000-0000-0000-0000-000000000019', 'C0000000-0000-0000-0000-000000000009');
 
 
 -- ============================================================
@@ -656,8 +640,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Pasang trigger ke tabel user_account
-DROP TRIGGER IF EXISTS trg_check_username ON windah_basudatra.user_account;
-CREATE TRIGGER trg_check_username
+CREATE OR REPLACE TRIGGER trg_check_username
 BEFORE INSERT ON windah_basudatra.user_account
 FOR EACH ROW EXECUTE FUNCTION validate_username();
 
@@ -823,8 +806,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_validate_event_artist ON windah_basudatra.event_artist;
-CREATE TRIGGER trg_validate_event_artist
+CREATE OR REPLACE TRIGGER trg_validate_event_artist
 BEFORE INSERT ON windah_basudatra.event_artist
 FOR EACH ROW EXECUTE FUNCTION windah_basudatra.validate_event_artist();
 
@@ -933,7 +915,8 @@ $$ LANGUAGE plpgsql;
 
 
 -- 2. Trigger: dijalankan sebelum INSERT ke order_promotion
-DROP TRIGGER IF EXISTS trg_validate_promotion_on_order ON windah_basudatra.order_promotion;
+DROP TRIGGER IF EXISTS trg_validate_promotion_on_order
+    ON windah_basudatra.order_promotion;
 
 CREATE TRIGGER trg_validate_promotion_on_order
     BEFORE INSERT ON windah_basudatra.order_promotion
@@ -956,7 +939,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS check_seat_before_delete ON windah_basudatra.seat;
+-- DROP TRIGGER IF EXISTS check_seat_before_delete ON windah_basudatra.seat;
 CREATE TRIGGER check_seat_before_delete
 BEFORE DELETE ON windah_basudatra.seat
 FOR EACH ROW EXECUTE FUNCTION check_seat();
@@ -984,7 +967,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS check_ticket_category_quota ON windah_basudatra.ticket;
+-- DROP TRIGGER IF EXISTS check_ticket_category_quota ON windah_basudatra.ticket;
 CREATE TRIGGER check_ticket_category_quota
 BEFORE INSERT ON windah_basudatra.ticket
 FOR EACH ROW EXECUTE FUNCTION check_ticket_category_quota();
