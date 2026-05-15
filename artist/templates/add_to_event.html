@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tambah Artis ke Event — TikTakTuk{% endblock %}
+{% block nav_artist %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/artist.css' %}">
+{% endblock %}
+
+{% block content %}
+<div style="min-height:75vh;display:flex;align-items:center;justify-content:center;padding:3rem 1rem;">
+<div style="width:100%;max-width:680px;">
+
+    <div class="card card-soft">
+        <div class="card-body p-5">
+
+            <a href="/artist/" class="btn btn-sm d-inline-flex align-items-center gap-1 border-0 ps-0 text-muted mb-3">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+
+            <div class="mb-5">
+                <h5 class="fw-semibold mb-1">Tambah artis ke event</h5>
+                <p class="text-muted small mb-0">Masukkan ID artis, ID event, dan peran artis.</p>
+            </div>
+
+            <div id="errAteTrigger" class="alert alert-danger py-2 small" style="display:none;"></div>
+
+            <div class="mb-4">
+                <label class="form-label small fw-medium">Artist ID <span class="text-danger">*</span></label>
+                <input id="ateArtist" class="form-control" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <div id="errAteArtist" class="text-danger small mt-1" style="display:none;">Artist ID wajib diisi.</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label small fw-medium">Event ID <span class="text-danger">*</span></label>
+                <input id="ateEvent" class="form-control" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <div id="errAteEvent" class="text-danger small mt-1" style="display:none;">Event ID wajib diisi.</div>
+            </div>
+
+            <div class="mb-5">
+                <label class="form-label small fw-medium">Peran artis <span class="text-danger">*</span></label>
+                <input id="ateRole" class="form-control" placeholder="Headliner, Opening Act, Guest Star, ...">
+                <div id="errAteRole" class="text-danger small mt-1" style="display:none;">Peran artis wajib diisi.</div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="/artist/" class="btn btn-light">Batal</a>
+                <button id="submitBtn" class="btn btn-primary d-inline-flex align-items-center gap-2" onclick="submitAddToEvent()">
+                    <i class="bi bi-plus-lg"></i> Tambah artis
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ATE_URL = "{% url 'artist:add_to_event' %}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+function showToast(msg, type) {
+    const isSuccess = type === 'success';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;top:1.25rem;right:1.25rem;z-index:9999;min-width:280px;max-width:360px;';
+    wrap.innerHTML = `
+    <div class="toast-msg" style="display:flex;align-items:center;gap:.875rem;background:#fff;border-radius:999px;padding:.75rem 1rem .75rem .75rem;box-shadow:0 4px 20px rgba(0,0,0,.1);animation:slideIn .3s ease;">
+        <div style="width:36px;height:36px;border-radius:50%;background:${isSuccess ? '#22c55e' : '#ef4444'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-${isSuccess ? 'check-lg' : 'x-lg'}" style="color:#fff;font-size:14px;"></i>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size:.75rem;font-weight:700;color:${isSuccess ? '#22c55e' : '#ef4444'};margin-bottom:.1rem;">${isSuccess ? 'Berhasil!' : 'Error!'}</div>
+            <div style="font-size:.85rem;color:#374151;">${msg}</div>
+        </div>
+        <button onclick="this.closest('[style]').remove()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem;line-height:1;padding:.25rem;">✕</button>
+    </div>`;
+    document.body.appendChild(wrap);
+    setTimeout(() => {
+        wrap.style.transition = 'opacity .5s';
+        wrap.style.opacity = '0';
+        setTimeout(() => wrap.remove(), 500);
+    }, 3000);
+}
+
+function clearErrors() {
+    ['errAteArtist','errAteEvent','errAteRole','errAteTrigger'].forEach(id =>
+        document.getElementById(id).style.display = 'none'
+    );
+    ['ateArtist','ateEvent','ateRole'].forEach(id =>
+        document.getElementById(id).classList.remove('is-invalid')
+    );
+}
+
+function submitAddToEvent() {
+    clearErrors();
+
+    const artistId = document.getElementById('ateArtist').value.trim();
+    const eventId  = document.getElementById('ateEvent').value.trim();
+    const role     = document.getElementById('ateRole').value.trim();
+
+    let valid = true;
+    if (!artistId) { document.getElementById('errAteArtist').style.display = 'block'; document.getElementById('ateArtist').classList.add('is-invalid'); valid = false; }
+    if (!eventId)  { document.getElementById('errAteEvent').style.display = 'block';  document.getElementById('ateEvent').classList.add('is-invalid');  valid = false; }
+    if (!role)     { document.getElementById('errAteRole').style.display = 'block';   document.getElementById('ateRole').classList.add('is-invalid');   valid = false; }
+    if (!valid) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menambahkan...';
+
+    fetch(ATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF_TOKEN },
+        body: new URLSearchParams({ artist_id: artistId, event_id: eventId, role_artist: role })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Tambah artis';
+
+        if (data.ok) {
+            document.getElementById('ateArtist').value = '';
+            document.getElementById('ateEvent').value  = '';
+            document.getElementById('ateRole').value   = '';
+            showToast('Artis berhasil ditambahkan ke event.', 'success');
+        } else {
+            const e = document.getElementById('errAteTrigger');
+            e.textContent = data.error;
+            e.style.display = 'block';
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Tambah artis';
+        const e = document.getElementById('errAteTrigger');
+        e.textContent = 'Terjadi kesalahan. Coba lagi.';
+        e.style.display = 'block';
+    });
+}
+</script>
+{% endblock %}

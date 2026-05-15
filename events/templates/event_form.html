@@ -117,7 +117,9 @@
                         {{ artist_formset.empty_form.role }}
                       </div>
                       <div class="col-md-2 d-flex align-items-end">
-                        <span class="text-muted small">Form baru</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill remove-artist-form">
+                          Batal
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -198,19 +200,21 @@
               <div class="card-body">
                 <div class="row g-3">
                   <div class="col-md-4">
-                    <label class="form-label">Category name</label>
+                    <label class="form-label">Nama Kategori</label>
                     {{ formset.empty_form.category_name }}
                   </div>
                   <div class="col-md-3">
-                    <label class="form-label">Price</label>
+                    <label class="form-label">Harga</label>
                     {{ formset.empty_form.price }}
                   </div>
                   <div class="col-md-3">
-                    <label class="form-label">Quota</label>
+                    <label class="form-label">Kuota</label>
                     {{ formset.empty_form.quota }}
                   </div>
                   <div class="col-md-2 d-flex align-items-end">
-                    <span class="text-muted small">Form baru</span>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill remove-ticket-form">
+                      Batal
+                    </button>
                   </div>
                 </div>
               </div>
@@ -231,34 +235,87 @@
 {% block extra_js %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const addButton = document.getElementById('add-ticket-form');
-    const formsetContainer = document.getElementById('ticket-formset');
-    const totalForms = document.getElementById('id_ticket_categories-TOTAL_FORMS')
-      || document.getElementById('id_ticketcategory_set-TOTAL_FORMS')
-      || document.querySelector('[name$="-TOTAL_FORMS"]');
+    function renumberFormset(container, rowSelector, prefix, totalFormsInput) {
+      if (!container || !totalFormsInput) return;
 
-    const template = document.getElementById('empty-ticket-form');
+      const rows = container.querySelectorAll(rowSelector);
 
-    addButton.addEventListener('click', function () {
-      const formIndex = parseInt(totalForms.value, 10);
-      let newFormHtml = template.innerHTML.replace(/__prefix__/g, formIndex);
-      formsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
-      totalForms.value = formIndex + 1;
+      rows.forEach(function (row, index) {
+        row.querySelectorAll('input, select, textarea, label').forEach(function (area) {
+          ['name', 'id', 'for'].forEach(function (attr) {
+            const value = area.getAttribute(attr);
+            if (!value) return;
+
+            area.setAttribute(
+              attr,
+              value.replace(new RegExp(prefix + '-\\d+-', 'g'), prefix + '-' + index + '-')
+            );
+          });
+        });
+      });
+
+      totalFormsInput.value = rows.length;
+    }
+
+    const addTicketButton = document.getElementById('add-ticket-form');
+    const ticketFormsetContainer = document.getElementById('ticket-formset');
+    const ticketTotalForms = document.getElementById('id_ticket_categories-TOTAL_FORMS');
+    const ticketTemplate = document.getElementById('empty-ticket-form');
+
+    if (addTicketButton && ticketFormsetContainer && ticketTotalForms && ticketTemplate) {
+      addTicketButton.addEventListener('click', function () {
+        const formIndex = parseInt(ticketTotalForms.value, 10);
+        const newFormHtml = ticketTemplate.innerHTML.replace(/__prefix__/g, formIndex);
+
+        ticketFormsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
+        ticketTotalForms.value = formIndex + 1;
+      });
+    }
+
+    const addArtistButton = document.getElementById('add-artist-form');
+    const artistFormsetContainer = document.getElementById('artist-formset');
+    const artistTotalForms = document.getElementById('id_event_artists-TOTAL_FORMS');
+    const artistTemplate = document.getElementById('empty-artist-form');
+
+    if (addArtistButton && artistFormsetContainer && artistTotalForms && artistTemplate) {
+      addArtistButton.addEventListener('click', function () {
+        const formIndex = parseInt(artistTotalForms.value, 10);
+        const newFormHtml = artistTemplate.innerHTML.replace(/__prefix__/g, formIndex);
+
+        artistFormsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
+        artistTotalForms.value = formIndex + 1;
+      });
+    }
+
+    document.addEventListener('click', function (event) {
+      const removeTicketButton = event.target.closest('.remove-ticket-form');
+      if (removeTicketButton) {
+        const row = removeTicketButton.closest('.ticket-form');
+        if (row) {
+          row.remove();
+          renumberFormset(
+            ticketFormsetContainer,
+            '.ticket-form',
+            'ticket_categories',
+            ticketTotalForms
+          );
+        }
+      }
+
+      const removeArtistButton = event.target.closest('.remove-artist-form');
+      if (removeArtistButton) {
+        const row = removeArtistButton.closest('.artist-form');
+        if (row) {
+          row.remove();
+          renumberFormset(
+            artistFormsetContainer,
+            '.artist-form',
+            'event_artists',
+            artistTotalForms
+          );
+        }
+      }
     });
   });
-
-  const addArtistButton = document.getElementById('add-artist-form');
-  const artistFormsetContainer = document.getElementById('artist-formset');
-  const artistTotalForms = document.getElementById('id_event_artists-TOTAL_FORMS');
-  const artistTemplate = document.getElementById('empty-artist-form');
-
-  if (addArtistButton && artistFormsetContainer && artistTotalForms && artistTemplate) {
-    addArtistButton.addEventListener('click', function () {
-      const formIndex = parseInt(artistTotalForms.value, 10);
-      let newFormHtml = artistTemplate.innerHTML.replace(/__prefix__/g, formIndex);
-      artistFormsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
-      artistTotalForms.value = formIndex + 1;
-    });
-  }
 </script>
 {% endblock %}

@@ -45,8 +45,9 @@
   <div class="toolbar">
     <div class="search"><input type="text" placeholder="Cari section, baris, atau nomor..."></div>
     <select class="filter">
+      <option value="">Semua Venue</option>
       {% for v in venues %}
-        <option value="{{ v }}">{{ v }}</option>
+        <option value="{{ v.id }}">{{ v.name }}</option>
       {% endfor %}
     </select>
   </div>
@@ -65,7 +66,7 @@
       </thead>
       <tbody>
         {% for s in seats %}
-        <tr>
+        <tr data-id="{{ s.id }}" data-section="{{ s.section }}" data-row="{{ s.row }}" data-number="{{ s.number }}" data-venue-id="{{ s.venue_id }}">
           <td>{{ s.section }}</td>
           <td>{{ s.row }}</td>
           <td>
@@ -82,11 +83,7 @@
           <td>
             <div class="d-flex justify-content-end gap-2 actions">
               <button class="btn btn-sm btn-outline-secondary" title="Edit" data-bs-toggle="modal" data-bs-target="#seatEditModal">✏️</button>
-              {% if s.status == 'Terisi' %}
-                <button class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" title="Kursi ini sudah di-assign ke tiket dan tidak dapat dihapus. Hapus atau ubah tiket terlebih dahulu.">🗑️</button>
-              {% else %}
                 <button class="btn btn-sm btn-outline-danger" title="Hapus" data-bs-toggle="modal" data-bs-target="#seatDeleteModal">🗑️</button>
-              {% endif %}
             </div>
           </td>
         </tr>
@@ -101,104 +98,145 @@
 
   <div class="modal fade" id="seatCreateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 rounded-4">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold">Tambah Kursi Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Venue</label>
-            <select class="form-select">
+      <form method="POST" action="{% url 'seats:seat_create' %}?role={{ user_role }}&username={{ request.GET.username }}">
+        {% csrf_token %}
+        <div class="modal-content border-0 rounded-4">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Tambah Kursi Baru</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Venue</label>
+              <select class="form-select" name="venue_id" required>
+                <option value="">-- Pilih Venue --</option>
               {% for v in venues %}
-                {% if v != 'Semua Venue' %}
-                <option value="{{ v }}">{{ v }}</option>
-                {% endif %}
+                <option value="{{ v.id }}">{{ v.name }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Section</label>
-            <input type="text" class="form-control" placeholder="WVIP">
+            <input type="text" class="form-control" name="section" placeholder="WVIP" required>
           </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Baris</label>
-              <input type="text" class="form-control" placeholder="A">
+              <input type="text" class="form-control" name="row" placeholder="A" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">No. Kursi</label>
-              <input type="text" class="form-control" placeholder="1">
+              <input type="text" class="form-control" name="number" placeholder="1" required>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary rounded-pill">Tambah</button>
+          <button type="submit" class="btn btn-primary rounded-pill">Tambah</button>
         </div>
       </div>
+      </form>
     </div>
   </div>
 
   <div class="modal fade" id="seatEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 rounded-4">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold">Edit Kursi</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Venue</label>
-            <select class="form-select">
+      <form method="POST" id="editForm" action="">
+        {% csrf_token %}
+        <div class="modal-content border-0 rounded-4">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Edit Kursi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Venue</label>
+              <select class="form-select" name="venue_id" id="editVenue" required>
+                <option value="">-- Pilih Venue --</option>
               {% for v in venues %}
-                {% if v != 'Semua Venue' %}
-                <option value="{{ v }}">{{ v }}</option>
+                {% if v.name != 'Semua Venue' %}
+                <option value="{{ v.id }}">{{ v.name }}</option>
                 {% endif %}
               {% endfor %}
             </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Section</label>
-            <input type="text" class="form-control" placeholder="WVIP">
+            <input type="text" class="form-control" name="section" id="editSection" placeholder="WVIP" required>
           </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Baris</label>
-              <input type="text" class="form-control" placeholder="A">
+              <input type="text" class="form-control" name="row" id="editRow" placeholder="A" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">No. Kursi</label>
-              <input type="text" class="form-control" placeholder="2">
+              <input type="text" class="form-control" name="number" id="editNumber" placeholder="2" required>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary rounded-pill">Simpan</button>
+          <button type="submit" class="btn btn-primary rounded-pill">Simpan</button>
         </div>
       </div>
+      </form>
     </div>
   </div>
 
   <div class="modal fade" id="seatDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 rounded-4">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold text-danger">Hapus Kursi</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+      <form method="POST" id="deleteForm" action="">
+        {% csrf_token %}
+        <div class="modal-content border-0 rounded-4">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-danger">Hapus Kursi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         <div class="modal-body">
           <p>Apakah Anda yakin ingin menghapus kursi ini? Tindakan ini tidak dapat dibatalkan.</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-danger rounded-pill" data-bs-dismiss="modal">Hapus</button>
+          <button type="submit" class="btn btn-danger rounded-pill">Hapus</button>
         </div>
       </div>
+      </form>
     </div>
   </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}{% endblock %}
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const roleParam = "?role={{ user_role }}&username={{ request.GET.username }}";
+
+    // Edit Modal pre-fill
+    document.querySelectorAll('[data-bs-target="#seatEditModal"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tr = this.closest('tr');
+        const id = tr.getAttribute('data-id');
+        const section = tr.getAttribute('data-section');
+        const row = tr.getAttribute('data-row');
+        const number = tr.getAttribute('data-number');
+        const venue_id = tr.getAttribute('data-venue-id');
+
+        document.getElementById('editForm').action = `/seats/update/${id}/` + roleParam;
+        document.getElementById('editVenue').value = venue_id;
+        document.getElementById('editSection').value = section;
+        document.getElementById('editRow').value = row;
+        document.getElementById('editNumber').value = number;
+      });
+    });
+
+    // Delete Modal form action
+    document.querySelectorAll('[data-bs-target="#seatDeleteModal"]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = this.closest('tr').getAttribute('data-id');
+        document.getElementById('deleteForm').action = `/seats/delete/${id}/` + roleParam;
+      });
+    });
+  });
+</script>
+{% endblock %}

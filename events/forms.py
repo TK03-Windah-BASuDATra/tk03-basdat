@@ -59,7 +59,7 @@ class TicketCategoryForm(forms.Form):
 
 TicketCategoryFormSet = formset_factory(
     TicketCategoryForm,
-    extra=1,
+    extra=0,
     can_delete=True,
 )
 
@@ -88,6 +88,6 @@ class EventArtistDummyForm(forms.Form):
 
 EventArtistFormSet = formset_factory(
     EventArtistDummyForm,
-    extra=1,
+    extra=0,
     can_delete=True,
 )
