@@ -101,9 +101,10 @@ class EventView:
         return min(prices) if prices else 0
 
 def _load_venues():
-    has_seat_table = _table_exists("seat") and "venue_id" in _table_columns("seat")
+    venue_cols = _table_columns("venue")
+    has_tipe_seating = "tipe_seating" in venue_cols
 
-    if has_seat_table:
+    if has_tipe_seating:
         sql = """
             SELECT
                 v.venue_id,
@@ -111,40 +112,63 @@ def _load_venues():
                 v.capacity,
                 v.address,
                 v.city,
-                COUNT(s.seat_id) AS seat_count
+                v.tipe_seating
             FROM venue v
-            LEFT JOIN seat s ON s.venue_id = v.venue_id
-            GROUP BY v.venue_id, v.venue_name, v.capacity, v.address, v.city
             ORDER BY v.venue_name
         """
     else:
-        sql = """
-            SELECT
-                v.venue_id,
-                v.venue_name,
-                v.capacity,
-                v.address,
-                v.city,
-                0 AS seat_count
-            FROM venue v
-            ORDER BY v.venue_name
-        """
+        has_seat_table = _table_exists("seat") and "venue_id" in _table_columns("seat")
+
+        if has_seat_table:
+            sql = """
+                SELECT
+                    v.venue_id,
+                    v.venue_name,
+                    v.capacity,
+                    v.address,
+                    v.city,
+                    COUNT(s.seat_id) AS seat_count
+                FROM venue v
+                LEFT JOIN seat s ON s.venue_id = v.venue_id
+                GROUP BY v.venue_id, v.venue_name, v.capacity, v.address, v.city
+                ORDER BY v.venue_name
+            """
+        else:
+            sql = """
+                SELECT
+                    v.venue_id,
+                    v.venue_name,
+                    v.capacity,
+                    v.address,
+                    v.city,
+                    0 AS seat_count
+                FROM venue v
+                ORDER BY v.venue_name
+            """
 
     with connection.cursor() as cursor:
         cursor.execute(sql)
         rows = _dictfetchall(cursor)
 
-    return [
-        VenueView(
-            venue_id=str(row["venue_id"]),
-            venue_name=row["venue_name"],
-            capacity=row["capacity"],
-            address=row["address"],
-            city=row["city"],
-            seating_type="reserved" if int(row["seat_count"] or 0) > 0 else "free",
+    venues = []
+    for row in rows:
+        if has_tipe_seating:
+            seating_type = "reserved" if row["tipe_seating"] == "RESERVED_SEATING" else "free"
+        else:
+            seating_type = "reserved" if int(row["seat_count"] or 0) > 0 else "free"
+
+        venues.append(
+            VenueView(
+                venue_id=str(row["venue_id"]),
+                venue_name=row["venue_name"],
+                capacity=row["capacity"],
+                address=row["address"],
+                city=row["city"],
+                seating_type=seating_type,
+            )
         )
-        for row in rows
-    ]
+
+    return venues
 
 def _find_venue(pk):
     pk = str(pk)
@@ -253,11 +277,30 @@ def _find_event(pk):
 def _post_object_id(request, key):
     return request.POST.get(key, "").strip()
 
+def _delete_seat_dependencies_for_venue(cursor, venue_id):
+    if (
+        _table_exists("has_relationship")
+        and _table_exists("seat")
+        and "seat_id" in _table_columns("has_relationship")
+        and "seat_id" in _table_columns("seat")
+        and "venue_id" in _table_columns("seat")
+    ):
+        cursor.execute(
+            """
+            DELETE FROM has_relationship hr
+            USING seat s
+            WHERE hr.seat_id = s.seat_id
+            AND s.venue_id = %s
+            """,
+            [venue_id],
+        )
+
 def _sync_seats(cursor, venue_id, capacity, seating_type):
     seat_cols = _table_columns("seat")
     if "venue_id" not in seat_cols:
         return
 
+    _delete_seat_dependencies_for_venue(cursor, venue_id)
     cursor.execute("DELETE FROM seat WHERE venue_id = %s", [venue_id])
 
     if seating_type != "reserved":
@@ -268,7 +311,7 @@ def _sync_seats(cursor, venue_id, capacity, seating_type):
             """
             INSERT INTO seat (seat_id, section, seat_number, row_number, venue_id)
             SELECT
-                gen_random_uuid(),
+                uuid_generate_v4(),
                 'Regular',
                 CONCAT('S', LPAD((((gs - 1) %% 50) + 1)::text, 3, '0')),
                 CONCAT('R', CEIL(gs / 50.0)::int),
@@ -281,7 +324,7 @@ def _sync_seats(cursor, venue_id, capacity, seating_type):
         cursor.execute(
             """
             INSERT INTO seat (seat_id, venue_id, seat_number)
-            SELECT gen_random_uuid(), %s, CONCAT('S', gs)
+            SELECT uuid_generate_v4(), %s, CONCAT('S', gs)
             FROM generate_series(1, %s) AS gs
             """,
             [venue_id, capacity],
@@ -290,7 +333,7 @@ def _sync_seats(cursor, venue_id, capacity, seating_type):
         cursor.execute(
             """
             INSERT INTO seat (seat_id, venue_id, seat_label)
-            SELECT gen_random_uuid(), %s, CONCAT('S', gs)
+            SELECT uuid_generate_v4(), %s, CONCAT('S', gs)
             FROM generate_series(1, %s) AS gs
             """,
             [venue_id, capacity],
@@ -299,7 +342,7 @@ def _sync_seats(cursor, venue_id, capacity, seating_type):
         cursor.execute(
             """
             INSERT INTO seat (seat_id, venue_id)
-            SELECT gen_random_uuid(), %s
+            SELECT uuid_generate_v4(), %s
             FROM generate_series(1, %s)
             """,
             [venue_id, capacity],
@@ -536,21 +579,28 @@ def venue_create(request):
             try:
                 with transaction.atomic(), connection.cursor() as cursor:
                     cursor.execute(
-                        "SELECT sp_create_venue(%s, %s, %s, %s)",
+                        """
+                        INSERT INTO venue (venue_id, venue_name, capacity, address, city, tipe_seating)
+                        VALUES (uuid_generate_v4(), %s, %s, %s, %s, %s)
+                        RETURNING venue_id
+                        """,
                         [
                             form.cleaned_data["venue_name"],
                             form.cleaned_data["capacity"],
                             form.cleaned_data["address"],
                             form.cleaned_data["city"],
+                            "RESERVED_SEATING" if form.cleaned_data["seating_type"] == "reserved" else "FREE_SEATING",
                         ],
                     )
                     venue_id = cursor.fetchone()[0]
+
                     _sync_seats(
                         cursor,
                         venue_id,
                         form.cleaned_data["capacity"],
                         form.cleaned_data["seating_type"],
                     )
+
                 messages.success(request, "Venue berhasil ditambahkan.")
                 return redirect(_with_role("events:venue_list", role))
             except DatabaseError as exc:
@@ -590,15 +640,28 @@ def venue_update(request):
             try:
                 with transaction.atomic(), connection.cursor() as cursor:
                     cursor.execute(
-                        "SELECT sp_update_venue(%s, %s, %s, %s, %s)",
+                        """
+                        UPDATE venue
+                        SET venue_name = %s,
+                            capacity = %s,
+                            address = %s,
+                            city = %s,
+                            tipe_seating = %s
+                        WHERE venue_id = %s
+                        """,
                         [
-                            venue_id,
                             form.cleaned_data["venue_name"],
                             form.cleaned_data["capacity"],
                             form.cleaned_data["address"],
                             form.cleaned_data["city"],
+                            "RESERVED_SEATING" if form.cleaned_data["seating_type"] == "reserved" else "FREE_SEATING",
+                            venue_id,
                         ],
                     )
+
+                    if cursor.rowcount == 0:
+                        raise DatabaseError(f"Venue dengan ID {venue_id} tidak ditemukan.")
+
                     if (
                         form.cleaned_data["capacity"] != venue.capacity
                         or form.cleaned_data["seating_type"] != venue.seating_type
@@ -609,6 +672,7 @@ def venue_update(request):
                             form.cleaned_data["capacity"],
                             form.cleaned_data["seating_type"],
                         )
+
                 messages.success(request, "Venue berhasil diperbarui.")
                 return redirect(_with_role("events:venue_list", role))
             except DatabaseError as exc:
@@ -640,9 +704,21 @@ def venue_delete(request):
     if request.POST.get("mode") == "confirm":
         try:
             with transaction.atomic(), connection.cursor() as cursor:
+                _delete_seat_dependencies_for_venue(cursor, venue_id)
+
                 if _table_exists("seat") and "venue_id" in _table_columns("seat"):
-                    cursor.execute("DELETE FROM seat WHERE venue_id = %s", [venue_id])
-                cursor.execute("SELECT sp_delete_venue(%s)", [venue_id])
+                    cursor.execute(
+                        "DELETE FROM seat WHERE venue_id = %s",
+                        [venue_id],
+                    )
+                cursor.execute(
+                    "DELETE FROM venue WHERE venue_id = %s",
+                    [venue_id],
+                )
+
+                if cursor.rowcount == 0:
+                    raise DatabaseError(f"Venue dengan ID {venue_id} tidak ditemukan.")
+
             messages.success(request, "Venue berhasil dihapus.")
             return redirect(_with_role("events:venue_list", role))
         except DatabaseError as exc:
@@ -698,7 +774,7 @@ def event_create(request):
                 with transaction.atomic(), connection.cursor() as cursor:
                     event_cols = _table_columns("event")
                     insert_cols = ["event_id", "event_title", "event_datetime", "venue_id", "organizer_id"]
-                    values_sql = ["gen_random_uuid()", "%s", "%s", "%s", "%s"]
+                    values_sql = ["uuid_generate_v4()", "%s", "%s", "%s", "%s"]
                     params = [
                         form.cleaned_data["event_title"],
                         form.cleaned_data["event_datetime"],
